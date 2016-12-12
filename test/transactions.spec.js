@@ -59,7 +59,7 @@ describe('SqlTransaction ::', () => {
                         deferer.resolve();
                     });
                     return transaction.forModel(Dog)
-                        .create(transaction.wrap({ name: 'fido' }));
+                        .create({ name: 'fido' });
                 })
             );
 
@@ -90,17 +90,40 @@ describe('SqlTransaction ::', () => {
                         transaction.after.catch(countDogs);
                         return Q.all([
                             transaction.forModel(Dog)
-                                .create(transaction.wrap({ name: 'fido' })),
+                                .create({ name: 'fido' }),
                             transaction.forModel(Dog)
-                                .create(transaction.wrap({ name: 'fido' }))
+                                .create({ name: 'fido' })
                         ]);
                     });
             });
         });
 
-        // it('should commit when handled manually', done => {
-        //     done();
-        // });
+        it('should commit when handled manually', done => {
+            const deferer = Q.defer();
+            let committed = false;
+            SqlHelper.beginTransaction(transactionPromise =>
+                transactionPromise.then(transaction => {
+                    transaction.after.then(() => {
+                        committed = true;
+                        deferer.resolve();
+                    });
+                    return transaction.forModel(Dog)
+                        .create({ name: 'fido' })
+                        .then(() => transaction.commit());
+                })
+            );
+
+
+            deferer.promise
+                .then(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(1);
+                            committed.should.be.equal(true);
+                            done();
+                        });
+                });
+        });
 
         it('should rollback when handled manually', done => {
             const countDogs = () => {
@@ -118,13 +141,52 @@ describe('SqlTransaction ::', () => {
                         const defer = Q.defer();
                         transaction
                             .forModel(Dog)
-                            .create(transaction.wrap({ name: 'fido' }), () => {
+                            .create({ name: 'fido' }, () => {
                                 return transaction.rollback()
                                     .catch(done);
                             });
                         return defer.promise;
                     })
             );
+        });
+
+        it('should rollback updates', done => {
+
+            SqlHelper.beginTransaction(transactionPromise =>
+                transactionPromise
+                    .then(transaction => {
+                        return transaction
+                            .forModel(Dog)
+                            .create({ name: 'fido' })
+                            .then((dog) => {
+                                transaction.after.then(() => { handleUpdate(dog); });
+                                return transaction.commit()
+                                    .catch(done);
+                            });
+                    })
+            );
+
+            function handleUpdate(dog) {
+                Dog.findOneById(dog.id)
+                    .then(dog => {
+                        SqlHelper.beginTransaction(tPromise =>
+                            tPromise.then(transactionInner => {
+                                dog.name = 'skippy';
+                                return transactionInner.forModel(Dog)
+                                    .update({ id: dog.id }, dog)
+                                    .then(() => {
+                                        return transactionInner.rollback();
+                                    })
+                                    .then(() => {
+                                        Dog.count({ name: 'fido' })
+                                            .then(count => {
+                                                count.should.be.equal(1);
+                                                done();
+                                            });
+                                    });
+                            }));
+                    });
+            }
         });
 
         it('should rollback using the sails-mysql-transactions framework only', done => {
@@ -138,7 +200,7 @@ describe('SqlTransaction ::', () => {
                 }
 
                 Dog.transact(transaction)
-                    .create(transaction.wrap({ name: 'fido' }), () => {
+                    .create({ name: 'fido' }, () => {
                         return transaction.rollback((err) => {
                             if (err) {
                                 sails.log(err);

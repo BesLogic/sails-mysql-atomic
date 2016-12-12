@@ -80,17 +80,6 @@ function SqlTransaction(transaction) {
     this.rollback = rollback;
     this.isHandled = isHandled;
     this.after = afterTransactionPromise.promise;
-    this.wrap = wrapWrapper;
-
-    /**
-     * Wrapper around the `transaction.wrap` method, since it uses
-     * `this`, we cannot expose the method directly
-     * 
-     * @param {any} valueToWrap
-     */
-    function wrapWrapper(valueToWrap){
-        return transaction.wrap(valueToWrap);
-    }
 
     /**
      * Attatch the query to the transaction before
