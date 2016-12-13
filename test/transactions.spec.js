@@ -1,5 +1,7 @@
 const Sails = require('sails').Sails;
+global.chai = require('chai');
 global.should = require('chai').should();
+global.sinon = require('sinon');
 
 describe('SqlTransaction ::', () => {
 
@@ -170,12 +172,50 @@ describe('SqlTransaction ::', () => {
                 Dog.findOneById(dog.id)
                     .then(dog => {
                         SqlHelper.beginTransaction(tPromise =>
-                            tPromise.then(transactionInner => {
+                            tPromise.then(transaction => {
                                 dog.name = 'skippy';
-                                return transactionInner.forModel(Dog)
+                                return transaction.forModel(Dog)
                                     .update({ id: dog.id }, dog)
                                     .then(() => {
-                                        return transactionInner.rollback();
+                                        return transaction.rollback();
+                                    })
+                                    .then(() => {
+                                        Dog.count({ name: 'fido' })
+                                            .then(count => {
+                                                count.should.be.equal(1);
+                                                done();
+                                            });
+                                    });
+                            }));
+                    });
+            }
+        });
+
+        it('should rollback deletes', done => {
+
+            SqlHelper.beginTransaction(transactionPromise =>
+                transactionPromise
+                    .then(transaction => {
+                        return transaction
+                            .forModel(Dog)
+                            .create({ name: 'fido' })
+                            .then((dog) => {
+                                transaction.after.then(() => { handleDelete(dog); });
+                                return transaction.commit()
+                                    .catch(done);
+                            });
+                    })
+            );
+
+            function handleDelete(dog) {
+                Dog.findOneById(dog.id)
+                    .then(dog => {
+                        SqlHelper.beginTransaction(tPromise =>
+                            tPromise.then(transaction => {
+                                return transaction.forModel(Dog)
+                                    .destroy({ id: dog.id })
+                                    .then(() => {
+                                        return transaction.rollback();
                                     })
                                     .then(() => {
                                         Dog.count({ name: 'fido' })
@@ -217,6 +257,112 @@ describe('SqlTransaction ::', () => {
                     });
             });
         });
+
+        it('should throw on commit twice', done => {
+            SqlHelper.beginTransaction(p =>
+                p.then(tran => {
+                    tran.commit();
+                    tran.commit();
+                })
+                    .catch(() => done()));
+        });
+
+        it('should throw on rollback twice', done => {
+            SqlHelper.beginTransaction(p =>
+                p.then(tran => {
+                    tran.rollback();
+                    tran.rollback();
+                })
+                    .catch(() => done()));
+        });
+
+        it('should throw when not returning a promise chain', done => {
+            SqlHelper.beginTransaction(p => {
+                p.then(() => {
+                }).catch(() => done());
+            });
+        });
+
+        it('should throw when not returning a promise chain (branch 2)', done => {
+            SqlHelper.beginTransaction(p => {
+                p.then(() => {
+                    return 1;
+                }).catch(() => done());
+            });
+        });
+        it('should throw when not returning a promise chain (branch 3)', done => {
+            SqlHelper.beginTransaction(p => {
+                p.then(() => {
+                    return { catch: () => { } };
+                }).catch(() => done());
+            });
+        });
+        it('should throw when not returning a promise chain (branch 4)', done => {
+            SqlHelper.beginTransaction(p => {
+                p.then(() => {
+                    return { finally: () => { } };
+                }).catch(() => done());
+            });
+        });
+
+        it('should throw on commit after rollback', done => {
+            SqlHelper.beginTransaction(p =>
+                p.then(tran => {
+                    tran.rollback();
+                    tran.commit();
+                })
+                    .catch(() => done()));
+        });
+
+        it('should throw on rollback after commit', done => {
+            SqlHelper.beginTransaction(p =>
+                p.then(tran => {
+                    tran.commit();
+                    tran.rollback();
+                })
+                    .catch(() => done()));
+        });
+
+        it('should reject promise when failed to start transaction', () => {
+            const setupSpy = sinon.spy();
+
+            const handler = SqlTransactionHandler.getTransactionStartHandler(setupSpy);
+
+            handler('error');
+
+            // should be a rejected promise
+            const returnedPromise = setupSpy.args[0][0];
+            returnedPromise.isRejected().should.be.true;
+        });
+
+        it('should reject manual and global commit promise on failure', done => {
+            const transactionMock = {
+                commit: sinon.spy(),
+                rollback: sinon.spy()
+            };
+            const transaction = SqlTransactionFactory.CreateSqlTransaction(transactionMock);
+
+            transaction.commit().catch(() => done());
+
+            const commitCallback = transactionMock.commit.args[0][0];
+
+            commitCallback('error');
+        });
+
+        it('should reject manual and global rollback promise on failure', done => {
+            const transactionMock = {
+                commit: sinon.spy(),
+                rollback: sinon.spy()
+            };
+            const transaction = SqlTransactionFactory.CreateSqlTransaction(transactionMock);
+
+            transaction.rollback().catch(() => done());
+
+            const rollbackCallback = transactionMock.rollback.args[0][0];
+
+            rollbackCallback('error');
+        });
+
     });
 
 });

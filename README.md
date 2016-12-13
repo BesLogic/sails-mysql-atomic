@@ -69,3 +69,11 @@ SqlHelper.beginTransaction(transactionPromise =>
 );
 
 ```
+
+# Run tests:
+
+`npm test`
+> Run all tests
+
+`npm run test-cover`
+> Run test with coverage output in the coverage folder
