@@ -3,10 +3,31 @@
 This is an installable hook that wraps the sails-mysql-transactions hook to add support for promises
 
 # How to install it:
+Remove your dependency to `sails-mysql`. It is bundled with this package.
+
 ```
 "sails-mysql-transactions-helper": "git+http://devsrv.beslogic.com:8050/scm/node/sails-hook-mysql-transactions-helper.git"
 ```
 > Add this to your `package.json` dependencies, then run `npm install`
+
+Then change your db connection to use the right adapter:
+```
+myConnectionName : {
+    adapter: 'sails-mysql-transactions',
+    host: 'xxxxxxx',
+    user: 'xxxxxxx',
+    password: 'xxxxxxx',
+    database: 'xxxxxxx',
+
+    transactionConnectionLimit: 20,
+    rollbackTransactionOnError: false,
+    queryCaseSensitive: false,
+
+    replication: {
+        enabled: false
+    }
+}
+```
 
 # How it works:
 
