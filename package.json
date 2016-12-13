@@ -1,6 +1,6 @@
 {
   "name": "mysql-transactions-helper",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
@@ -10,7 +10,7 @@
     "test": "set NODE_ENV=test&&mocha -R spec",
     "test-debug": "set NODE_ENV=test&&mocha --debug -R spec",
     "test-cover": "set NODE_ENV=test&&istanbul cover node_modules/mocha/bin/_mocha -- test/**/*.spec.js",
-    "postinstall": "npm install https://github.com/postmanlabs/sails-mysql-transactions/tarball/f62774a3ce0e032306d4d12c1edb66a989cea31d"
+    "postinstall": "npm install https://github.com/bblpny/sails-mysql-transactions/tarball/f62774a3ce0e032306d4d12c1edb66a989cea31d"
   },
   "transaction-tarball": "true",
   "keywords": [
@@ -19,16 +19,16 @@
   "author": "Samuel Poirier",
   "license": "ISC",
   "devDependencies": {
-    "chai": "^3.5.0",
+    "chai": "~3.5.0",
     "eslint": "~3.12.0",
     "istanbul": "~0.4.5",
     "mocha": "~3.2.0",
-    "newman": "^2.1.2",
-    "should": "^11.1.2",
-    "sinon": "^1.17.6"
+    "newman": "~2.1.2",
+    "should": "~11.1.2",
+    "sinon": "~1.17.6"
   },
   "dependencies": {
-    "sails": "^0.12.11",
-    "winston": "^2.3.0"
+    "sails": "~0.12.11",
+    "winston": "~2.3.0"
   }
 }
