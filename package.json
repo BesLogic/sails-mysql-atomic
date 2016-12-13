@@ -1,6 +1,6 @@
 {
   "name": "mysql-transactions-helper",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
@@ -19,6 +19,7 @@
   "author": "Samuel Poirier",
   "license": "ISC",
   "devDependencies": {
+    "sails": "~0.12.11",
     "chai": "~3.5.0",
     "eslint": "~3.12.0",
     "istanbul": "~0.4.5",
@@ -28,7 +29,6 @@
     "sinon": "~1.17.6"
   },
   "dependencies": {
-    "sails": "~0.12.11",
     "winston": "~2.3.0"
   }
 }
