@@ -1,4 +1,5 @@
-const Transaction = require('sails-mysql-transactions').Transaction;
+const Transaction = require('sails-mysql-transactions').Transaction,
+    SqlTransactionHandler = require('./SqlTransactionHandler');
 
 module.exports = new SqlHelper();
 
