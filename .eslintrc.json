@@ -46,8 +46,12 @@
     "beforeEach": true,
     "after": true,
     "expect": true,
+    "chai": true,
+    "sinon": true,
 
     "SqlHelper": true,
+    "SqlTransactionFactory": true,
+    "SqlTransactionHandler": true,
     "Dog": true
   }
 }

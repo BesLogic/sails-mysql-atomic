@@ -118,3 +118,4 @@ nbproject
 .node_history
 .vscode/*
 !.vscode/launch.json
+coverage/

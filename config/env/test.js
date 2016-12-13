@@ -23,18 +23,7 @@ module.exports = {
 
     models: {
         connection: 'mySQLT',
-        migrate: 'drop',
-        schema: true,
-        autoTK: false,
-        autosubscribe: false,
-
-        attributes: {
-
-            transactionId: {
-                type: 'string'
-            }
-
-        }
+        migrate: 'drop'
     },
 
     log: {
