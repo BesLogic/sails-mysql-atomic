@@ -1,4 +1,5 @@
-const Q = require('bluebird');
+const Q = require('bluebird'),
+    SqlTransactionFactory = require('./SqlTransactionFactory');
 
 module.exports = new SqlTransactionHandler();
 
