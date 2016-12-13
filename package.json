@@ -1,6 +1,6 @@
 {
   "name": "mysql-transactions-helper",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
@@ -9,7 +9,8 @@
   "scripts": {
     "test": "set NODE_ENV=test&&mocha -R spec",
     "test-debug": "set NODE_ENV=test&&mocha --debug -R spec",
-    "test-cover": "set NODE_ENV=test&&istanbul cover node_modules/mocha/bin/_mocha -- test/**/*.spec.js"
+    "test-cover": "set NODE_ENV=test&&istanbul cover node_modules/mocha/bin/_mocha -- test/**/*.spec.js",
+    "postinstall": "npm install https://github.com/postmanlabs/sails-mysql-transactions/tarball/f62774a3ce0e032306d4d12c1edb66a989cea31d"
   },
   "transaction-tarball": "true",
   "keywords": [
@@ -28,7 +29,6 @@
   },
   "dependencies": {
     "sails": "^0.12.11",
-    "sails-mysql-transactions": "^0.8.3",
     "winston": "^2.3.0"
   }
 }

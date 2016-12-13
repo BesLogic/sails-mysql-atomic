@@ -2,9 +2,15 @@
 
 This is an installable hook that wraps the sails-mysql-transactions hook to add support for promises
 
-This hook will add a `transactionId` attribute to all models in order to work properly
+# How to install it:
+```
+"sails-mysql-transactions-helper": "git+http://devsrv.beslogic.com:8050/scm/node/sails-hook-mysql-transactions-helper.git"
+```
+> Add this to your `package.json` dependencies, then run `npm install`
 
 # How it works:
+
+This hook will add a `transactionId` attribute to all models in order to work properly
 
 Everything starts with the `SqlHelper.beginTransaction(...)` method.
 
