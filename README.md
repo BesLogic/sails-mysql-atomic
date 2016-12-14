@@ -6,7 +6,7 @@ This is an installable hook that wraps the sails-mysql-transactions hook to add 
 Remove your dependency to `sails-mysql`. It is bundled with this package.
 
 ```
-"sails-mysql-transactions-helper": "git+http://devsrv.beslogic.com:8050/scm/node/sails-hook-mysql-transactions-helper.git"
+"sails-mysql-transactions-helper": "git+https://github.com/BesLogic/sails-mysql-transactions-helper.git"
 ```
 > Add this to your `package.json` dependencies, then run `npm install`
 
