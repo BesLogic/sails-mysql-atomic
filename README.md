@@ -107,6 +107,52 @@ SqlHelper.beginTransaction(transactionPromise =>
 
 ```
 
+# How to use it in your project
+
+The hook will be accessible via the sails hooks:
+
+```
+// invoke from hooks
+sails.hooks['mysql-transactions-helper'].beginTransaction(...);
+
+// you can store it into a variable as well as a shortcut
+let SqlHelper = sails.hooks['mysql-transactions-helper'];
+SqlHelper.beginTransaction(...);
+```
+
+# Limitations
+
+There is a 
+
+Right now, those methods are supported with transaction:
+```
+    transaction.forModel(Dog).create(/* ... */);
+    transaction.forModel(Dog).update(/* ... */);
+    transaction.forModel(Dog).find(/* ... */);
+    transaction.forModel(Dog).findOrCreate(/* ... */);
+    transaction.forModel(Dog).findOne(/* ... */);
+    transaction.forModel(Dog).destroy(/* ... */);
+    transaction.forModel(Dog).count(/* ... */);
+```
+
+But the transaction does not support creating an array of object. The workaround is simple using the promise library:
+```
+// NOT SUPPORTED
+let dogs = [{name:'fido'}, {name:'skippy'}];
+transaction.forModel(Dog).create(dogs)
+        .then(/* do stuff */)
+        .catch(/* do stuff */);
+
+```
+
+```
+// WORKAROUND
+let dogs = [{name:'fido'}, {name:'skippy'}];
+q.all(_.map(dogs, d => transaction.forModel(Dog).create(d)))
+        .then(/* do stuff */)
+        .catch(/* do stuff */);
+```
+
 # Run tests:
 
 `npm test`
