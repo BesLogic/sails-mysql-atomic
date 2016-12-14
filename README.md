@@ -112,8 +112,6 @@ SqlHelper.beginTransaction(...);
 
 # Limitations
 
-There is a 
-
 Right now, those methods are supported with transaction:
 ```
     transaction.forModel(Dog).create(/* ... */);
