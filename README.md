@@ -8,17 +8,7 @@ Remove your dependency to `sails-mysql`. It is bundled with this package.
 ```
 "sails-mysql-transactions-helper": "git+http://devsrv.beslogic.com:8050/scm/node/sails-hook-mysql-transactions-helper.git"
 ```
-> Add this to your `package.json` dependencies
-
-```
-"postinstall": "npm install https://github.com/bblpny/sails-mysql-transactions/tarball/f62774a3ce0e032306d4d12c1edb66a989cea31d"
-```
-> Add this to your `package.json` scripts
-
-```
-"transaction-tarball": "true",
-```
-> Add this to your `package.json` scripts, then run `npm install`
+> Add this to your `package.json` dependencies, then run `npm install`
 
 Then change your db connection to use the right adapter:
 ```
