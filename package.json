@@ -1,6 +1,6 @@
 {
   "name": "mysql-transactions-helper",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
