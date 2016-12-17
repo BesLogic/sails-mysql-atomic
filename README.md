@@ -1,4 +1,5 @@
 ![alt tag](https://travis-ci.org/BesLogic/sails-mysql-transactions-helper.svg?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/BesLogic/sails-mysql-transactions-helper/badge.svg?branch=master)](https://coveralls.io/github/BesLogic/sails-mysql-transactions-helper?branch=master)
 # Sails MySql Transactions Helper 
 
 This is an installable hook that wraps the sails-mysql-transactions hook to add support for promises

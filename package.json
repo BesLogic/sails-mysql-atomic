@@ -10,7 +10,8 @@
     "test": "set NODE_ENV=test&&mocha -R spec",
     "test-debug": "set NODE_ENV=test&&mocha --debug -R spec",
     "test-cover": "set NODE_ENV=test&&istanbul cover node_modules/mocha/bin/_mocha -- test/**/*.spec.js",
-    "postinstall": "npm install sails https://github.com/bblpny/sails-mysql-transactions/tarball/f62774a3ce0e032306d4d12c1edb66a989cea31d"
+    "postinstall": "npm install sails https://github.com/bblpny/sails-mysql-transactions/tarball/f62774a3ce0e032306d4d12c1edb66a989cea31d",
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
   },
   "transaction-tarball": "true",
   "keywords": [
