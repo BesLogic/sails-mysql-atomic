@@ -120,7 +120,8 @@ describe('SqlTransaction ::', () => {
                         
                         return transaction
                             .forModel(Dog)
-                            .create({ name: 'fido' }, () => {
+                            .create({ name: 'fido' })
+                            .then(() => {
                                 return transaction.rollback();
                             });
                     });
