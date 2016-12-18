@@ -1,5 +1,5 @@
-const Transaction = require('sails-mysql-transactions').Transaction,
-    SqlTransactionHandler = require('./SqlTransactionHandler');
+const Promise = require('bluebird'),
+    SqlTransactionFactory = require('./SqlTransactionFactory');
 
 module.exports = new SqlHelper();
 
@@ -23,7 +23,45 @@ function SqlHelper() {
      */
     function beginTransaction(transactionSetup) {
 
-        // start a new transaction
-        Transaction.start(SqlTransactionHandler.getTransactionStartHandler(transactionSetup));
+        // prepare error to have the right call stack
+        const error = new Error('The callback provided in the beginTransaction ' +
+            'must return the promise chain to run within the transaction.');
+
+        return SqlTransactionFactory.CreateSqlTransaction()
+            .then(sqlTransaction => {
+                const promiseChain = transactionSetup(sqlTransaction);
+
+                if (!promiseChain || !promiseChain.catch || !promiseChain.then) {
+                    sqlTransaction.rollback();
+                    // cannot throw error here since we are in an async callback
+                    sails.log.error(error);
+                    return Promise.reject(error);
+                }
+
+                promiseChain.then(() => {
+                    // if unhandled at this point, chec if we need
+                    // to commit or rollback. If it fails on commit
+                    // it will rollback automatically
+                    if (!sqlTransaction.isHandled()) {
+                        sqlTransaction.commit();
+                    }
+                },
+                (err) => {
+                    if (!sqlTransaction.isHandled()) {
+                        sails.log.error('Uncaught error during the transaction:', err);
+                        // oops, unhandled catch, rollback!
+                        sqlTransaction.rollback();
+                    }
+                });
+
+                // return the global transaction promise (resolve = commit success, reject = rollback)
+                return sqlTransaction.after;
+            })
+            .catch(err => {
+                sails.log.error(err);
+                throw err;
+            });
+
+
     }
 }

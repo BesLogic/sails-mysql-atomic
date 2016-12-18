@@ -4,20 +4,11 @@ module.exports = {
 
     connections: {
         mySQLT: {
-            adapter: 'sails-mysql-transactions',
+            adapter: 'sails-mysql-transactionnal',
             host: 'localhost',
             user: 'root',
             password: '123456',
-            database: 'mysqltransactionshelper',
-
-            transactionConnectionLimit: 20,
-            rollbackTransactionOnError: false,
-            queryCaseSensitive: false,
-
-            replication: {
-                enabled: false
-            }
-
+            database: 'mysqltransactionshelper'
         }
     },
 

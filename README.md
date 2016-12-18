@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/BesLogic/sails-mysql-transactions-helper/badge.svg?branch=master)](https://coveralls.io/github/BesLogic/sails-mysql-transactions-helper?branch=master)
 # Sails MySql Transactions Helper 
 
-This is an installable hook that wraps the sails-mysql-transactions hook to add support for promises
+This is an installable hook that adds easy sql transactions with support for promise syntax
 
 # How to install it:
 Remove your dependency to `sails-mysql`. It is bundled with this package.
@@ -15,19 +15,11 @@ Remove your dependency to `sails-mysql`. It is bundled with this package.
 Then change your db connection to use the right adapter:
 ```
 myConnectionName : {
-    adapter: 'sails-mysql-transactions',
+    adapter: 'sails-mysql-transactionnal',
     host: 'xxxxxxx',
     user: 'xxxxxxx',
     password: 'xxxxxxx',
-    database: 'xxxxxxx',
-
-    transactionConnectionLimit: 20,
-    rollbackTransactionOnError: false,
-    queryCaseSensitive: false,
-
-    replication: {
-        enabled: false
-    }
+    database: 'xxxxxxx'
 }
 ```
 
@@ -35,9 +27,9 @@ myConnectionName : {
 
 This hook will add a `transactionId` attribute to all models in order to work properly
 
-Everything starts with the `SqlHelper.beginTransaction(...)` method.
+Everything starts with the `SqlHelper.beginTransaction(...) -> Promise` method.
 
-You need to provide a callback that setups the transaction promise. The promise will pass a transaction object with the following methods available:
+You need to provide a callback that receives a transaction object and that must return a promise. The transaction object has the following methods available:
 
 
 `.commit() -> Promise`
@@ -57,20 +49,19 @@ You need to provide a callback that setups the transaction promise. The promise 
 ```
  //note here we are not wraping the function with 
  // brackets so it returns the promise rightaway
-SqlHelper.beginTransaction(transactionPromise =>
-        transactionPromise.then(...)
+SqlHelper.beginTransaction(transaction =>
+        transaction.forModel(Dog).create(...)
 );
 
 
 // otherwise we must return the promise like this:
-SqlHelper.beginTransaction(transactionPromise => {
-        return transactionPromise.then(...);
+SqlHelper.beginTransaction(transaction => {
+        return transaction.forModel(Dog).create(...);
 });
 
 // handling transaction result:
 
-SqlHelper.beginTransaction(transactionPromise =>
-    transactionPromise.then(transaction => {
+SqlHelper.beginTransaction(transaction => {
         transaction.after.then(() => {
             // handle transaction success after commit
         })
@@ -95,7 +86,13 @@ SqlHelper.beginTransaction(transactionPromise =>
                         .then(/*[optional] rollback success*/)
                         .catch(/*[optional] rollback failed*/));
     })
-);
+    // this promise is the same as the one passed via transaction.after
+    .then(() => {
+        // handle transaction success after commit
+    })
+    .catch(() => {
+        // handle transaction error after rollback
+    });
 
 ```
 
@@ -117,6 +114,8 @@ SqlHelper.beginTransaction(...);
 Right now, those methods are supported with transaction:
 ```
     transaction.forModel(Dog).create(/* ... */);
+    // create multiple works as well
+    transaction.forModel(Dog).create([/* ... */]);
     transaction.forModel(Dog).update(/* ... */);
     transaction.forModel(Dog).find(/* ... */);
     transaction.forModel(Dog).findOrCreate(/* ... */);
@@ -124,25 +123,6 @@ Right now, those methods are supported with transaction:
     transaction.forModel(Dog).destroy(/* ... */);
     transaction.forModel(Dog).count(/* ... */);
 ```
-
-But the transaction does not support creating an array of object. The workaround is simple using the promise library:
-```
-// NOT SUPPORTED
-let dogs = [{name:'fido'}, {name:'skippy'}];
-transaction.forModel(Dog).create(dogs)
-        .then(/* do stuff */)
-        .catch(/* do stuff */);
-
-```
-
-```
-// WORKAROUND
-let dogs = [{name:'fido'}, {name:'skippy'}];
-q.all(_.map(dogs, d => transaction.forModel(Dog).create(d)))
-        .then(/* do stuff */)
-        .catch(/* do stuff */);
-```
-
 # Run tests:
 
 `npm test`

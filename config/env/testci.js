@@ -8,15 +8,7 @@ module.exports = {
             host: 'localhost',
             user: 'root',
             password: '',
-            database: 'mysqltransactionshelper',
-
-            transactionConnectionLimit: 20,
-            rollbackTransactionOnError: false,
-            queryCaseSensitive: false,
-
-            replication: {
-                enabled: false
-            }
+            database: 'mysqltransactionshelper'
 
         }
     },

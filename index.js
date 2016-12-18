@@ -15,7 +15,7 @@ function mysqlTransactionsHelperHook() {
 
                 attributes: {
 
-                    transactionId: {
+                    mySqlTransactionId: {
                         type: 'string'
                     }
 
@@ -23,7 +23,7 @@ function mysqlTransactionsHelperHook() {
 
             });
             // now we need to load the sails-mysql-transactions adapter into the main app
-            const adapter = require('./node_modules/sails-mysql-transactions/lib/adapter');
+            const adapter = require('./api/adapters/adapter');
             sails.adapters[adapter.identity] = adapter;
         }
     }, SqlHelper);

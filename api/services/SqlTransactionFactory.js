@@ -1,4 +1,8 @@
-const Q = require('bluebird');
+const Promise = require('bluebird'),
+    mysql = require('sails-mysql/node_modules/mysql'),
+    _ = require('lodash'),
+    TransactionConnectionPool = require('./TransactionConnectionPool'),
+    uuid = require('uuid');
 
 module.exports = new SqlTransactionFactory();
 
@@ -6,6 +10,7 @@ module.exports = new SqlTransactionFactory();
  * Sql transaction facory
  */
 function SqlTransactionFactory() {
+    const connectionSource = createSource(sails.config.connections[sails.config.models.connection]);
     this.CreateSqlTransaction = CreateSqlTransaction;
 
     /**
@@ -14,8 +19,32 @@ function SqlTransactionFactory() {
      * @param {any} transaction the sails-mysql-tranaction
      * @returns {SqlTransaction} the new transaction
      */
-    function CreateSqlTransaction(transaction) {
-        return new SqlTransaction(transaction);
+    function CreateSqlTransaction() {
+        return new Promise((resolve, reject) => {
+            connectionSource.getConnection((err, connection) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                const transactionId = uuid();
+                try{
+                    TransactionConnectionPool.registerConnection(transactionId, connection);
+                }catch(err){
+                    sails.log.error(err);
+                    reject(err);
+                    return;
+                }
+
+                connection.query('START TRANSACTION', err =>{
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve(new SqlTransaction(transactionId, connection));
+                });
+            });
+        });
     }
 
 }
@@ -24,19 +53,41 @@ function SqlTransactionFactory() {
  * Sql transaction object to pass along the begin transaction
  * 
  * @type {SqlTransaction}
- * @param {any} transaction the transaction from sails-mysql-transactions
+ * @param {MySqlConnection} connection the mysql connection
  */
-function SqlTransaction(transaction) {
+function SqlTransaction(transactionId, connection) {
+    // Functions to wrap to pass the explicit connection when available
+    const functionsToWrap = [
+        'create',
+        'update',
+        'find',
+        'findOrCreate',
+        'destroy',
+        'count'
+    ];
+
     let committed = false;
     let rolledBack = false;
-    const afterTransactionPromise = Q.defer();
+    let resolveAfterTransactionPromise;
+    let rejectAfterTransactionPromise;
 
+    this.id = id;
     this.forModel = forModel;
     this.commit = commit;
     this.rollback = rollback;
     this.isHandled = isHandled;
-    this.after = afterTransactionPromise.promise;
+    this.after = new Promise((resolve, reject) => {
+        resolveAfterTransactionPromise = resolve;
+        rejectAfterTransactionPromise = reject;
+    });
 
+
+    /**
+     * @returns {string} the transaction id
+     */
+    function id(){
+        return transactionId;
+    }
     /**
      * Attatch the query to the transaction before
      * starting a query
@@ -45,7 +96,22 @@ function SqlTransaction(transaction) {
      * @returns {Sails Model}
      */
     function forModel(sailsModel) {
-        return sailsModel.transact(transaction);
+        const modelClone = _.cloneDeep(sailsModel);
+        _.each(functionsToWrap, functionName => {
+            const originalFunction = modelClone[functionName];
+            modelClone[functionName] = function(data) {
+                
+                if(_.isArray(data)){
+                    _.each(data, d => d.mySqlTransactionId = id());
+                }else{
+                    data.mySqlTransactionId = id();
+                }
+
+                return originalFunction.apply(modelClone, arguments);
+            };
+        });
+
+        return modelClone;
     }
     /**
      * Commit the transaction
@@ -53,27 +119,32 @@ function SqlTransaction(transaction) {
     function commit() {
         if (isHandled()) {
             if (committed) {
-                throw new Error('This transaction has already been committed');
+                return Promise.reject('This transaction has already been committed');
             } else {
-                throw new Error('This transaction has already been rolledback');
+                return Promise.reject('This transaction has already been rolledback');
             }
         }
 
         committed = true;
-        transaction.commit(err => {
-            if (err) {
-                sails.log.error(err);
+        connection.commit((err) => {
+            connection.release(() => {
+                TransactionConnectionPool.unregisterConnection(id());
+                if (err) {
+                    sails.log.error(err);
 
-                rolledBack = true;
-                committed = false;
-                afterTransactionPromise.reject();
+                    rolledBack = true;
+                    committed = false;
+                    rejectAfterTransactionPromise(err);
 
-                sails.log.debug('ROLLEDBACK!');
-                return;
-            }
-            afterTransactionPromise.resolve();
+                    sails.log.debug('ROLLEDBACK!');
+                    return;
+                }
 
-            sails.log.debug('COMMIT!');
+
+                resolveAfterTransactionPromise();
+                sails.log.debug('COMMIT!');
+            });
+            
         });
 
         return this.after;
@@ -83,35 +154,46 @@ function SqlTransaction(transaction) {
      * Rolls back the transaction
      */
     function rollback() {
-        const rollbackDeferer = Q.defer();
+        let resolveRollback,
+            rejectRollback;
+        const rollbackPromise = new Promise((resolve, reject) => {
+            resolveRollback = resolve;
+            rejectRollback = reject;
+        });
         if (isHandled()) {
             if (committed) {
-                throw new Error('This transaction has already been committed');
+                return Promise.reject('This transaction has already been committed');
             } else {
-                throw new Error('This transaction has already been rolledback');
+                return Promise.reject('This transaction has already been rolledback');
             }
         }
         rolledBack = true;
 
-        transaction.rollback(err => {
-            if (err) {
-                rolledBack = true;
-                afterTransactionPromise.reject();
-                rollbackDeferer.reject();
+        connection.rollback((err) => {
+            // after rollback, release the connection right away
+            connection.release(() => {
+                TransactionConnectionPool.unregisterConnection(id());
+                if (err) {
+                    rolledBack = true;
+                    rejectAfterTransactionPromise();
+                    rejectRollback(err);
 
-                sails.log.error(err);
-                sails.log.debug('ROLLBACK ERROR!');
-                return;
-            }
-            afterTransactionPromise.reject();
-            rollbackDeferer.resolve();
+                    sails.log.error(err);
+                    sails.log.debug('ROLLBACK ERROR!');
+                    return;
+                }
 
-            sails.log.debug('ROLLBACK!');
+                rejectAfterTransactionPromise();
+                resolveRollback();
+
+                sails.log.debug('ROLLBACK!');
+            });
+            
         });
 
         // here we want another promise so we can do .rollback().then()
         // when it successfully rollback
-        return rollbackDeferer.promise;
+        return rollbackPromise;
     }
 
     /**
@@ -122,4 +204,37 @@ function SqlTransaction(transaction) {
     function isHandled() {
         return committed || rolledBack;
     }
+}
+
+
+/**
+ * Create db connection source based on configuration parameter provided.
+ *
+ * @param {object} config mySQL config
+ * @returns {mySQL.Source}
+ */
+function createSource(config) {
+    // otherwise, we create an object that mimics the api of pool, but returns new connections instead of
+    // from a pool
+    return {
+        getConnection: function (callback) {
+            let conn,
+                error;
+
+            try {
+                conn = mysql.createConnection(config);
+                // override the `release` function to allow release to act as `end` and as such mimic the pool api.
+                conn._release = conn.release;
+                conn.release = conn.end;
+            }
+            catch (err) {
+                error = err;
+            }
+
+            callback(error, conn);
+        },
+
+        // poolless connection source does not require to end, but we still expose the API for parity.
+        end: function () { }
+    };
 }

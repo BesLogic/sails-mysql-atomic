@@ -52,6 +52,7 @@
     "SqlHelper": true,
     "SqlTransactionFactory": true,
     "SqlTransactionHandler": true,
-    "Dog": true
+    "Dog": true,
+    "TransactionConnectionPool": true
   }
 }
