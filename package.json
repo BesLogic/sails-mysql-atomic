@@ -1,6 +1,6 @@
 {
-  "name": "sails-mysql-transactions-helper",
-  "version": "1.1.9",
+  "name": "sails-mysql-atomic",
+  "version": "1.2.0",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
@@ -8,15 +8,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/BesLogic/sails-mysql-transactions-helper.git"
+    "url": "https://github.com/BesLogic/sails-mysql-atomic.git"
   },
-  "keywords": [
-    "sails",
-    "waterline",
-    "orm",
-    "mysql",
-    "transactions"
-  ],
   "scripts": {
     "test": "set NODE_ENV=test&&mocha -R spec",
     "test-debug": "set NODE_ENV=test&&mocha --debug -R spec",
@@ -25,7 +18,13 @@
   },
   "transaction-tarball": "true",
   "keywords": [
-    "mysql-transactions-helper"
+    "sails",
+    "waterline",
+    "orm",
+    "mysql",
+    "transactions",
+    "sails-mysql-atomic",
+    "atomic"
   ],
   "author": "Samuel Poirier",
   "license": "ISC",

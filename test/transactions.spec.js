@@ -21,7 +21,7 @@ describe('SqlTransaction ::', () => {
             },
             hooks: {
                 // Load the hook
-                "mysql-transactions-helper": require('../'),
+                "sails-mysql-atomic": require('../'),
                 // Skip grunt (unless your hook uses it)
                 "grunt": false
             },

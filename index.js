@@ -6,7 +6,7 @@ function mysqlTransactionsHelperHook() {
 
     return _.merge({
         configure: () => {
-            sails.log.verbose('configuring mysql-transactions-helper');
+            sails.log.verbose('configuring sails-mysql-atomic');
             _.merge(sails.config.models, {
 
                 // force to use the defined model structure from attributes

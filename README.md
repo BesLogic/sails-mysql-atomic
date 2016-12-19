@@ -1,6 +1,6 @@
-![alt tag](https://travis-ci.org/BesLogic/sails-mysql-transactions-helper.svg?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/BesLogic/sails-mysql-transactions-helper/badge.svg?branch=master)](https://coveralls.io/github/BesLogic/sails-mysql-transactions-helper?branch=master)
-# Sails MySql Transactions Helper 
+![alt tag](https://travis-ci.org/BesLogic/sails-mysql-atomic.svg?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/BesLogic/sails-mysql-atomic/badge.svg?branch=master)](https://coveralls.io/github/BesLogic/sails-mysql-atomic?branch=master)
+# Sails MySql Atomic 
 
 This is an installable hook that adds easy sql transactions with support for promise syntax
 
@@ -8,13 +8,13 @@ This is an installable hook that adds easy sql transactions with support for pro
 Remove your dependency to `sails-mysql`. It is bundled with this package.
 
 ```
-npm install sails-mysql-transactions-helper --save
+npm install sails-mysql-atomic --save
 ```
 
 Then change your db connection to use the right adapter:
 ```
 myConnectionName : {
-    adapter: 'sails-mysql-transactional',
+    adapter: 'sails-mysql-atomic',
     host: 'xxxxxxx',
     user: 'xxxxxxx',
     password: 'xxxxxxx',
@@ -101,10 +101,10 @@ The hook will be accessible via the sails hooks:
 
 ```
 // invoke from hooks
-sails.hooks['sails-mysql-transactions-helper'].beginTransaction(...);
+sails.hooks['sails-mysql-atomic'].beginTransaction(...);
 
 // you can store it into a variable as well as a shortcut
-let SqlHelper = sails.hooks['sails-mysql-transactions-helper'];
+let SqlHelper = sails.hooks['sails-mysql-atomic'];
 SqlHelper.beginTransaction(...);
 ```
 
