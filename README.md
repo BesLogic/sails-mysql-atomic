@@ -15,7 +15,7 @@ Remove your dependency to `sails-mysql`. It is bundled with this package.
 Then change your db connection to use the right adapter:
 ```
 myConnectionName : {
-    adapter: 'sails-mysql-transactionnal',
+    adapter: 'sails-mysql-transactional',
     host: 'xxxxxxx',
     user: 'xxxxxxx',
     password: 'xxxxxxx',
