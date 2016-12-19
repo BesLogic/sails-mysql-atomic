@@ -8,9 +8,8 @@ This is an installable hook that adds easy sql transactions with support for pro
 Remove your dependency to `sails-mysql`. It is bundled with this package.
 
 ```
-"sails-mysql-transactions-helper": "git+https://github.com/BesLogic/sails-mysql-transactions-helper.git"
+npm install sails-mysql-transactions-helper --save
 ```
-> Add this to your `package.json` dependencies, then run `npm install`
 
 Then change your db connection to use the right adapter:
 ```
