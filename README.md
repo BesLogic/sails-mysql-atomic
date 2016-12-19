@@ -101,10 +101,10 @@ The hook will be accessible via the sails hooks:
 
 ```
 // invoke from hooks
-sails.hooks['mysql-transactions-helper'].beginTransaction(...);
+sails.hooks['sails-mysql-transactions-helper'].beginTransaction(...);
 
 // you can store it into a variable as well as a shortcut
-let SqlHelper = sails.hooks['mysql-transactions-helper'];
+let SqlHelper = sails.hooks['sails-mysql-transactions-helper'];
 SqlHelper.beginTransaction(...);
 ```
 
