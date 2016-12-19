@@ -14,7 +14,7 @@ const functionsToWrap = [
 ];
 
 _.extend(adapterWrapper, {
-    identity: 'sails-mysql-transactionnal'
+    identity: 'sails-mysql-transactional'
 });
 
 // replace the original function to pass the connection if available

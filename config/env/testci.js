@@ -4,7 +4,7 @@ module.exports = {
 
     connections: {
         mySQLT: {
-            adapter: 'sails-mysql-transactionnal',
+            adapter: 'sails-mysql-transactional',
             host: 'localhost',
             user: 'root',
             password: '',
