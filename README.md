@@ -24,7 +24,7 @@ myConnectionName : {
 
 # How it works:
 
-This hook will add a `transactionId` attribute to all models in order to work properly
+This hook will add a `mySqlTransactionId` attribute to all models in order to work properly
 
 Everything starts with the `SqlHelper.beginTransaction(...) -> Promise` method.
 
