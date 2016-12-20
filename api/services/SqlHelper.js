@@ -48,18 +48,15 @@ function SqlHelper() {
                 },
                 (err) => {
                     if (!sqlTransaction.isHandled()) {
-                        sails.log.error('Uncaught error during the transaction:', err);
                         // oops, unhandled catch, rollback!
-                        sqlTransaction.rollback();
+                        sqlTransaction.rollback(err);
                     }
+
+                    throw err;
                 });
 
                 // return the global transaction promise (resolve = commit success, reject = rollback)
                 return sqlTransaction.after;
-            })
-            .catch(err => {
-                sails.log.error(err);
-                throw err;
             });
 
 

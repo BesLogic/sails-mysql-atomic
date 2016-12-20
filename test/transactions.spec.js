@@ -53,16 +53,16 @@ describe('SqlTransaction ::', () => {
 
         it('should commit when unhandled and no error', done => {
             SqlHelper.beginTransaction(transaction => {
-                    transaction.after.then(() => {
-                        Dog.count({})
-                            .then(count => {
-                                count.should.be.equal(1);
-                                done();
-                            });
-                    });
-                    return transaction.forModel(Dog)
-                        .create({ name: 'fido' });
+                transaction.after.then(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(1);
+                            done();
+                        });
                 });
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido' });
+            });
         });
 
         it('should rollback when unhandled and has error (Note: This test will log the error in the console, which is normal)', done => {
@@ -75,35 +75,35 @@ describe('SqlTransaction ::', () => {
             };
 
             SqlHelper.beginTransaction(transaction => {
-                    transaction.after.catch(countDogs);
-                    return Promise.all([
-                        transaction.forModel(Dog)
-                            .create({ name: 'fido' }),
-                        transaction.forModel(Dog)
-                            .create({ name: 'fido' })
-                    ]);
-                });
+                transaction.after.catch(countDogs);
+                return Promise.all([
+                    transaction.forModel(Dog)
+                        .create({ name: 'fido' }),
+                    transaction.forModel(Dog)
+                        .create({ name: 'fido' })
+                ]);
+            });
         });
 
         it('should commit when handled manually', done => {
-            
+
             new Promise(resolve => {
                 SqlHelper.beginTransaction(transaction => {
-                        transaction.after.then(() => {
-                            resolve();
-                        });
-                        return transaction.forModel(Dog)
-                            .create({ name: 'fido' })
-                            .then(() => transaction.commit());
+                    transaction.after.then(() => {
+                        resolve();
                     });
+                    return transaction.forModel(Dog)
+                        .create({ name: 'fido' })
+                        .then(() => transaction.commit());
+                });
             })
-            .then(() => {
-                Dog.count({})
-                    .then(count => {
-                        count.should.be.equal(1);
-                        done();
-                    });
-            });
+                .then(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(1);
+                            done();
+                        });
+                });
         });
 
         it('should rollback when handled manually', done => {
@@ -116,48 +116,47 @@ describe('SqlTransaction ::', () => {
             };
 
             SqlHelper.beginTransaction(transaction => {
-                        transaction.after.catch(countDogs);
-                        
-                        return transaction
-                            .forModel(Dog)
-                            .create({ name: 'fido' })
-                            .then(() => {
-                                return transaction.rollback();
-                            });
+                transaction.after.catch(countDogs);
+
+                return transaction
+                    .forModel(Dog)
+                    .create({ name: 'fido' })
+                    .then(() => {
+                        return transaction.rollback();
                     });
+            });
         });
 
         it('should rollback updates', done => {
 
             SqlHelper.beginTransaction(transaction => {
-                        return transaction
-                            .forModel(Dog)
-                            .create({ name: 'fido' })
-                            .then((dog) => {
-                                transaction.after.then(() => { handleUpdate(dog); });
-                                return transaction.commit()
-                                    .catch(done);
-                            });
+                return transaction
+                    .forModel(Dog)
+                    .create({ name: 'fido' })
+                    .then((dog) => {
+                        transaction.after.then(() => { handleUpdate(dog); });
+                        return transaction.commit()
+                            .catch(done);
                     });
+            });
 
             function handleUpdate(dog) {
                 Dog.findOneById(dog.id)
                     .then(dog => {
                         SqlHelper.beginTransaction(transaction => {
-                                dog.name = 'skippy';
-                                return transaction.forModel(Dog)
-                                    .update({ id: dog.id }, dog)
-                                    .then(() => {
-                                        return transaction.rollback();
-                                    })
-                                    .then(() => {
-                                        Dog.count({ name: 'fido' })
-                                            .then(count => {
-                                                count.should.be.equal(1);
-                                                done();
-                                            });
-                                    });
-                            });
+                            return transaction.forModel(Dog)
+                                .update({ id: dog.id }, {name:'skippy'})
+                                .then(() => {
+                                    return transaction.rollback();
+                                })
+                                .then(() => {
+                                    Dog.count({ name: 'fido' })
+                                        .then(count => {
+                                            count.should.be.equal(1);
+                                            done();
+                                        });
+                                });
+                        });
                     });
             }
         });
@@ -165,145 +164,220 @@ describe('SqlTransaction ::', () => {
         it('should rollback deletes', done => {
 
             SqlHelper.beginTransaction(transaction => {
-                        return transaction
-                            .forModel(Dog)
-                            .create({ name: 'fido' })
-                            .then((dog) => {
-                                transaction.after.then(() => { handleDelete(dog); });
-                                return transaction.commit()
-                                    .catch(done);
-                            });
+                return transaction
+                    .forModel(Dog)
+                    .create({ name: 'fido' })
+                    .then((dog) => {
+                        transaction.after.then(() => { handleDelete(dog); });
+                        return transaction.commit()
+                            .catch(done);
                     });
+            });
 
             function handleDelete(dog) {
                 Dog.findOneById(dog.id)
                     .then(dog => {
                         SqlHelper.beginTransaction(transaction => {
-                                return transaction.forModel(Dog)
-                                    .destroy({ id: dog.id })
-                                    .then(() => {
-                                        return transaction.rollback();
-                                    })
-                                    .then(() => {
-                                        Dog.count({ name: 'fido' })
-                                            .then(count => {
-                                                count.should.be.equal(1);
-                                                done();
-                                            });
-                                    });
-                            });
+                            return transaction.forModel(Dog)
+                                .destroy({ id: dog.id })
+                                .then(() => {
+                                    return transaction.rollback();
+                                })
+                                .then(() => {
+                                    Dog.count({ name: 'fido' })
+                                        .then(count => {
+                                            count.should.be.equal(1);
+                                            done();
+                                        });
+                                });
+                        });
                     });
             }
         });
 
         it('should throw on commit twice', done => {
             SqlHelper.beginTransaction(tran => {
-                    tran.commit();
-                    tran.commit().catch(() => done());
-                });
+                tran.commit();
+                tran.commit().catch(() => done());
+            });
         });
 
         it('should throw on rollback twice', done => {
             SqlHelper.beginTransaction(tran => {
-                    tran.rollback();
-                    tran.rollback().catch(() => done());
-                });
+                tran.rollback();
+                tran.rollback().catch(() => done());
+            });
         });
 
         it('should throw when not returning a promise chain', done => {
-            
-            SqlHelper.beginTransaction(() => {return 1;})
-            .catch(() => done());
-            
+
+            SqlHelper.beginTransaction(() => { return 1; })
+                .catch(() => done());
+
         });
 
         it('should throw when not returning a promise chain (branch 2)', done => {
-            
-            SqlHelper.beginTransaction(() => {return 1;})
-            .catch(() => done());
+
+            SqlHelper.beginTransaction(() => { return 1; })
+                .catch(() => done());
 
         });
 
         it('should throw on commit after rollback', done => {
             SqlHelper.beginTransaction(tran => {
-                    tran.rollback();
-                    return tran.commit().catch(() => done());
-                });
+                tran.rollback();
+                return tran.commit().catch(() => done());
+            });
         });
 
         it('should throw on rollback after commit', done => {
             SqlHelper.beginTransaction(tran => {
-                    tran.commit();
-                    return tran.rollback().catch(() => done());
-                });
+                tran.commit();
+                return tran.rollback().catch(() => done());
+            });
         });
 
         it('should commit multiple create', done => {
             SqlHelper.beginTransaction(transaction => {
-                    transaction.after.then(() => {
-                        Dog.count({})
-                            .then(count => {
-                                count.should.be.equal(3);
-                                done();
-                            });
-                    });
-                    return transaction.forModel(Dog)
-                        .create([
-                            { name: 'fido' },
-                            { name: 'skippy' },
-                            { name: 'peanut' }
-                        ]);
+                transaction.after.then(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(3);
+                            done();
+                        });
                 });
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy' },
+                        { name: 'peanut' }
+                    ]);
+            });
         });
 
         it('should rollback multiple create', done => {
             SqlHelper.beginTransaction(transaction => {
-                    return transaction.forModel(Dog)
-                        .create([
-                            { name: 'fido' },
-                            { name: 'skippy' },
-                            { name: 'peanut' }
-                        ])
-                        .then(() => {
-                            throw 'some error to trigger rollback';
-                        });
-                })
-                .catch(() => {
-                        Dog.count({})
-                            .then(count => {
-                                count.should.be.equal(0);
-                                done();
-                            });
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy' },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => {
+                        throw 'some error to trigger rollback';
                     });
+            })
+                .catch(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(0);
+                            done();
+                        });
+                });
         });
 
         it('should rollback findOrCreate', done => {
             SqlHelper.beginTransaction(transaction => {
-                    return transaction.forModel(Dog)
-                        .findOrCreate({ name: 'fido' })
-                        .then(() => {
-                            throw 'some error to trigger rollback';
-                        });
-                })
-                .catch(() => {
-                        Dog.count({})
-                            .then(count => {
-                                count.should.be.equal(0);
-                                done();
-                            });
+                return transaction.forModel(Dog)
+                    .findOrCreate({ name: 'fido' })
+                    .then(() => {
+                        throw 'some error to trigger rollback';
                     });
+            })
+                .catch(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(0);
+                            done();
+                        });
+                });
+        });
+
+        it('should run with multiple transactions in parallel', done => {
+            const createDogInTransaction = (dogName) => SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({ name: dogName, age: 1, bones: [{ size: 'small' }, { size: 'large' }] });
+            });
+
+            const destroyAllDogsAndRollback = () => SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .destroy({})
+                    .then(() => transaction.rollback());
+            }).catch(() => {});
+
+            Promise.all([
+                createDogInTransaction('fido'),
+                createDogInTransaction('fido2'),
+                createDogInTransaction('fido3'),
+                createDogInTransaction('fido4'),
+                createDogInTransaction('fido5'),
+                // this one should be rolled back due to unique name
+                createDogInTransaction('fido').catch(()=>{})
+            ])
+            .then(() => Dog.count({}))
+            .then(count => count.should.be.equal(5))
+            .then(() => Bone.count({}))
+            .then(count => count.should.be.equal(10))
+            .then(() => destroyAllDogsAndRollback())
+            .then(() => Dog.count({}))
+            .then(count => count.should.be.equal(5))
+            .then(() => Bone.count({}))
+            .then(count => count.should.be.equal(10))
+            .then(() => {
+                done();
+            })
+            .catch(err => {
+                done('Caught exception: ' + err);
+            });
+        });
+
+        it('should rollback transaction when updating the same row with association table in parallel', done => {
+
+            const updateDogName = (transaction, id) => transaction.forModel(Dog).update({ id: id }, { name: 'skippy' });
+            const updateDogBones = (transaction, id) => transaction.forModel(Dog).update({ id: id }, { bones: [] });
+
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido', age: 1, bones: [{ size: 'small' }, { size: 'large' }] })
+                    .then(dog => transaction.commit().then(() => dog))
+                    .then(dog => {
+                        SqlHelper.beginTransaction(transaction =>
+                            Promise.all([
+                                updateDogName(transaction, dog.id),
+                                updateDogBones(transaction, dog.id)
+                            ])
+                                .then(() => {
+                                    const model = transaction.forModel(Dog);
+                                    const res = model.findOne({ id: dog.id });
+                                    return res.populate('bones');
+                                })
+                                .then(dog => {
+                                    dog.name.should.be.equal('skippy');
+                                    dog.bones.length.should.be.equal(0);
+                                })
+                                .then(() => transaction.rollback())
+                                .then(() => Dog.findOne({ name: 'fido' }).populate('bones'))
+                                .then(dog => {
+                                    dog.name.should.be.equal('fido');
+                                    dog.bones.length.should.be.equal(2);
+                                })
+                                .then(() => done())
+                                .catch(done));
+                    });
+            });
+
         });
 
 
     });
 
-    describe('TransactionConnectionPool :: ', () =>{
-        it('should throw when registering the same id twice', () =>{
+    describe('TransactionConnectionPool :: ', () => {
+        it('should throw when registering the same id twice', () => {
             const id = '1';
 
             TransactionConnectionPool.registerConnection(id, {});
             (() => TransactionConnectionPool.registerConnection(id, {}))
-            .should.throw();
+                .should.throw();
         });
     });
 

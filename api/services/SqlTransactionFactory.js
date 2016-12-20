@@ -2,6 +2,7 @@ const Promise = require('bluebird'),
     mysql = require('sails-mysql/node_modules/mysql'),
     _ = require('lodash'),
     TransactionConnectionPool = require('./TransactionConnectionPool'),
+    functionsToWrap = require('./WaterlineWrappedFunctions'),
     uuid = require('uuid');
 
 module.exports = new SqlTransactionFactory();
@@ -27,15 +28,15 @@ function SqlTransactionFactory() {
                     return;
                 }
                 const transactionId = uuid();
-                try{
+                try {
                     TransactionConnectionPool.registerConnection(transactionId, connection);
-                }catch(err){
+                } catch (err) {
                     sails.log.error(err);
                     reject(err);
                     return;
                 }
 
-                connection.query('START TRANSACTION', err =>{
+                connection.beginTransaction(err => {
                     if (err) {
                         reject(err);
                         return;
@@ -56,15 +57,6 @@ function SqlTransactionFactory() {
  * @param {MySqlConnection} connection the mysql connection
  */
 function SqlTransaction(transactionId, connection) {
-    // Functions to wrap to pass the explicit connection when available
-    const functionsToWrap = [
-        'create',
-        'update',
-        'find',
-        'findOrCreate',
-        'destroy',
-        'count'
-    ];
 
     let committed = false;
     let rolledBack = false;
@@ -85,7 +77,7 @@ function SqlTransaction(transactionId, connection) {
     /**
      * @returns {string} the transaction id
      */
-    function id(){
+    function id() {
         return transactionId;
     }
     /**
@@ -97,22 +89,20 @@ function SqlTransaction(transactionId, connection) {
      */
     function forModel(sailsModel) {
         const modelClone = _.cloneDeep(sailsModel);
+        modelClone.mySqlTransactionId = id();
         _.each(functionsToWrap, functionName => {
             const originalFunction = modelClone[functionName];
-            modelClone[functionName] = function(data) {
-                
-                if(_.isArray(data)){
-                    _.each(data, d => d.mySqlTransactionId = id());
-                }else{
-                    data.mySqlTransactionId = id();
-                }
+            modelClone[functionName] = function () {
 
-                return originalFunction.apply(modelClone, arguments);
+                const deferred = originalFunction.apply(modelClone, arguments);
+                deferred.toPromiseWithTransactionId(functionName, id());
+                return deferred;
             };
         });
 
         return modelClone;
     }
+
     /**
      * Commit the transaction
      */
@@ -144,7 +134,7 @@ function SqlTransaction(transactionId, connection) {
                 resolveAfterTransactionPromise();
                 sails.log.debug('COMMIT!');
             });
-            
+
         });
 
         return this.after;
@@ -153,7 +143,7 @@ function SqlTransaction(transactionId, connection) {
     /**
      * Rolls back the transaction
      */
-    function rollback() {
+    function rollback(error) {
         let resolveRollback,
             rejectRollback;
         const rollbackPromise = new Promise((resolve, reject) => {
@@ -175,7 +165,7 @@ function SqlTransaction(transactionId, connection) {
                 TransactionConnectionPool.unregisterConnection(id());
                 if (err) {
                     rolledBack = true;
-                    rejectAfterTransactionPromise();
+                    rejectAfterTransactionPromise(err);
                     rejectRollback(err);
 
                     sails.log.error(err);
@@ -183,12 +173,12 @@ function SqlTransaction(transactionId, connection) {
                     return;
                 }
 
-                rejectAfterTransactionPromise();
+                rejectAfterTransactionPromise(error);
                 resolveRollback();
 
                 sails.log.debug('ROLLBACK!');
             });
-            
+
         });
 
         // here we want another promise so we can do .rollback().then()
