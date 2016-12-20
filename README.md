@@ -110,7 +110,9 @@ SqlHelper.beginTransaction(...);
 
 # Limitations
 
-Right now, those methods are supported with transaction:
+This hook only works and tested with the promise syntax.
+
+Those methods are supported and tested with transaction:
 ```
     transaction.forModel(Dog).create(/* ... */);
     // create multiple works as well

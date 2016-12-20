@@ -56,7 +56,7 @@ Deferred.prototype.toPromiseWithTransactionId = function (functionName, transact
         // clone transporting the transaction id in the adapters
         _.each(_.keys(basicFinders), key => {
             _.each(this._context.waterline.collections, collection => collection[key] = basicFinders[key]);
-        } );
+        });
         this._method = dql[functionName] || basicFinders[functionName];
         this._deferred = Promise.promisify(this.exec).bind(this)();
     }
