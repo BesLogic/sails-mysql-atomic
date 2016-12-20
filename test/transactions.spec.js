@@ -145,7 +145,7 @@ describe('SqlTransaction ::', () => {
                     .then(dog => {
                         SqlHelper.beginTransaction(transaction => {
                             return transaction.forModel(Dog)
-                                .update({ id: dog.id }, {name:'skippy'})
+                                .update({ id: dog.id }, { name: 'skippy' })
                                 .then(() => {
                                     return transaction.rollback();
                                 })
@@ -276,6 +276,20 @@ describe('SqlTransaction ::', () => {
                 });
         });
 
+        it('should commit findOrCreate', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .findOrCreate({ name: 'fido' });
+            })
+                .then(() => {
+                    Dog.count({})
+                        .then(count => {
+                            count.should.be.equal(1);
+                            done();
+                        });
+                });
+        });
+
         it('should rollback findOrCreate', done => {
             SqlHelper.beginTransaction(transaction => {
                 return transaction.forModel(Dog)
@@ -303,35 +317,35 @@ describe('SqlTransaction ::', () => {
                 return transaction.forModel(Dog)
                     .destroy({})
                     .then(() => transaction.rollback());
-            }).catch(() => {});
+            }).catch(() => { });
 
             let failedDueToUniqueConstraint = 0;
             Promise.all([
                 // one of the two following should be rolled back due to unique name (can't predict which one)
-                createDogInTransaction('fido').catch(()=>{failedDueToUniqueConstraint++;}),
-                createDogInTransaction('fido').catch(()=>{failedDueToUniqueConstraint++;}),
+                createDogInTransaction('fido').catch(() => { failedDueToUniqueConstraint++; }),
+                createDogInTransaction('fido').catch(() => { failedDueToUniqueConstraint++; }),
                 createDogInTransaction('fido2'),
                 createDogInTransaction('fido3'),
                 createDogInTransaction('fido4'),
                 createDogInTransaction('fido5')
             ])
-            // only one should have failed
-            .then(() => failedDueToUniqueConstraint.should.be.equal(1))
-            .then(() => Dog.count({}))
-            .then(count => count.should.be.equal(5))
-            .then(() => Bone.count({}))
-            .then(count => count.should.be.equal(10))
-            .then(() => destroyAllDogsAndRollback())
-            .then(() => Dog.count({}))
-            .then(count => count.should.be.equal(5))
-            .then(() => Bone.count({}))
-            .then(count => count.should.be.equal(10))
-            .then(() => {
-                done();
-            })
-            .catch(err => {
-                done('Caught exception: ' + err);
-            });
+                // only one should have failed
+                .then(() => failedDueToUniqueConstraint.should.be.equal(1))
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(5))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(10))
+                .then(() => destroyAllDogsAndRollback())
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(5))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(10))
+                .then(() => {
+                    done();
+                })
+                .catch(err => {
+                    done('Caught exception: ' + err);
+                });
         });
 
         it('should rollback transaction when updating the same row with association table in parallel', done => {
