@@ -24,6 +24,7 @@ Deferred.prototype.toPromiseWithTransactionId = function (functionName, transact
         // modifying the actual waterline collections. This will only work with the Promise syntax.
         // Promises are awesome :D
         this._context = _.cloneDeep(this._context);
+        console.log(this._context.waterline.schema);
         _.each(this._context.adapter.connections, c => c._adapter.transactionId = transactionId);
         
         // overwrite the _model method to place the transaction id in the created model
