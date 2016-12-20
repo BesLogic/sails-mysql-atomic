@@ -305,15 +305,18 @@ describe('SqlTransaction ::', () => {
                     .then(() => transaction.rollback());
             }).catch(() => {});
 
+            let failedDueToUniqueConstraint = 0;
             Promise.all([
-                createDogInTransaction('fido'),
+                // one of the two following should be rolled back due to unique name (can't predict which one)
+                createDogInTransaction('fido').catch(()=>{failedDueToUniqueConstraint++;}),
+                createDogInTransaction('fido').catch(()=>{failedDueToUniqueConstraint++;}),
                 createDogInTransaction('fido2'),
                 createDogInTransaction('fido3'),
                 createDogInTransaction('fido4'),
-                createDogInTransaction('fido5'),
-                // this one should be rolled back due to unique name
-                createDogInTransaction('fido').catch(()=>{})
+                createDogInTransaction('fido5')
             ])
+            // only one should have failed
+            .then(() => failedDueToUniqueConstraint.should.be.equal(1))
             .then(() => Dog.count({}))
             .then(count => count.should.be.equal(5))
             .then(() => Bone.count({}))
@@ -369,16 +372,6 @@ describe('SqlTransaction ::', () => {
         });
 
 
-    });
-
-    describe('TransactionConnectionPool :: ', () => {
-        it('should throw when registering the same id twice', () => {
-            const id = '1';
-
-            TransactionConnectionPool.registerConnection(id, {});
-            (() => TransactionConnectionPool.registerConnection(id, {}))
-                .should.throw();
-        });
     });
 
 });
