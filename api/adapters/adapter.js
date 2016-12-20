@@ -8,7 +8,8 @@ const mysqlAdapter = require('sails-mysql/lib/adapter.js'),
     dql = require('waterline/lib/waterline/query/dql/index'),
     defaultMethods = require('waterline/lib/waterline/model/lib/defaultMethods'),
     basicFinders = require('waterline/lib/waterline/query/finders/basic'),
-    aggregates = require('waterline/lib/waterline/query/aggregate');
+    aggregates = require('waterline/lib/waterline/query/aggregate'),
+    composites = require('waterline/lib/waterline/query/composite')
 
 _.extend(adapterWrapper, {
     identity: 'sails-mysql-atomic'
@@ -24,39 +25,38 @@ Deferred.prototype.toPromiseWithConnection = function (functionName, connection)
         // Promises are awesome :D
         this._context = _.cloneDeep(this._context);
         _.each(this._context.adapter.connections, c => c._adapter.transactionConnection = connection);
-        
+
         // overwrite the _model method to place the transaction id in the created model
         // when we need to handle associations
         const originalModel = this._context._model;
         const context = this._context;
-        context._model = function(values){
+        context._model = function (values) {
             const newModel = new originalModel(values);
             // overwrite the model save method to pass the current context
-            newModel.save = function(options, cb) {
+            newModel.save = function (options, cb) {
                 return new defaultMethods.save(context, this, options, cb);
             };
             return newModel;
         };
         // overwrite the dql methods to remove lodash bind wrapper to allow the context 
         // clone transporting the transaction id in the adapters
-        _.each(_.keys(dql), key => {
-            this._context[key] = dql[key];
-            // we need to overwrite it in the waterline collections as well since it is used when creating
-            // associations
-            _.each(this._context.waterline.collections, collection => collection[key] = dql[key]);
-        });
+        const methodDefinitions = [
+            dql,
+            basicFinders,
+            aggregates,
+            composites
+        ];
 
-        // same thing for aggregates (createEach, findOrCreateEach)
-        _.each(_.keys(aggregates), key => {
-            this._context[key] = aggregates[key];
+        _.each(methodDefinitions, definition => {
+            _.each(_.keys(definition), key => {
+                this._context[key] = definition[key];
+                // we need to overwrite it in the waterline collections as well since it is used when creating
+                // associations
+                _.each(this._context.waterline.collections, collection => collection[key] = definition[key]);
+            });
         });
-
-        // overwrite the basic finders methods to remove lodash bind wrapper to allow the context 
-        // clone transporting the transaction id in the adapters
-        _.each(_.keys(basicFinders), key => {
-            _.each(this._context.waterline.collections, collection => collection[key] = basicFinders[key]);
-        });
-        this._method = dql[functionName] || basicFinders[functionName];
+        
+        this._method = dql[functionName] || basicFinders[functionName] || aggregates[functionName] || composites[functionName];
         this._deferred = Promise.promisify(this.exec).bind(this)();
     }
     return this._deferred;
@@ -69,7 +69,7 @@ _.each(functionsToWrap, functionName => {
         adapterWrapper[functionName] = function () {
             const connection = this.transactionConnection;
             sails.log.silly(functionName + ':: has transaction connection: ' + !!connection);
-            
+
             const args = [];
             for (let i = 0; i < arguments.length; i++) {
                 args.push(arguments[i]);
@@ -79,7 +79,7 @@ _.each(functionsToWrap, functionName => {
                 // push the explicit connection
                 args.push(connection);
             }
-            
+
             return originalFunction.apply(adapterWrapper, args);
         };
     }
