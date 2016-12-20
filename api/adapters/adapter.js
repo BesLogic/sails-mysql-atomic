@@ -1,7 +1,6 @@
 const mysqlAdapter = require('sails-mysql/lib/adapter.js'),
     _ = require('lodash'),
     adapterWrapper = _.clone(mysqlAdapter),
-    TransactionConnectionPool = require('../services/TransactionConnectionPool'),
     functionsToWrap = require('../services/WaterlineWrappedFunctions'),
     Deferred = require('waterline/lib/waterline/query/deferred'),
     Promise = require('bluebird'),
@@ -16,7 +15,7 @@ _.extend(adapterWrapper, {
 });
 
 // Deferred extensions
-Deferred.prototype.toPromiseWithTransactionId = function (functionName, transactionId) {
+Deferred.prototype.toPromiseWithConnection = function (functionName, connection) {
     if (!this._deferred) {
         // here we are starting by cloning the context so we can overwrite safely
         // our query methods to allow injecting the current transaction id in the adapter
@@ -24,8 +23,7 @@ Deferred.prototype.toPromiseWithTransactionId = function (functionName, transact
         // modifying the actual waterline collections. This will only work with the Promise syntax.
         // Promises are awesome :D
         this._context = _.cloneDeep(this._context);
-        console.log(this._context.waterline.schema);
-        _.each(this._context.adapter.connections, c => c._adapter.transactionId = transactionId);
+        _.each(this._context.adapter.connections, c => c._adapter.transactionConnection = connection);
         
         // overwrite the _model method to place the transaction id in the created model
         // when we need to handle associations
@@ -69,18 +67,19 @@ _.each(functionsToWrap, functionName => {
     if (_.has(adapterWrapper, functionName)) {
         const originalFunction = adapterWrapper[functionName];
         adapterWrapper[functionName] = function () {
-            const transactionId = this.transactionId;
-            sails.log.silly(functionName + ':: transactionId: ' + transactionId);
-            if (!transactionId) {
-                return originalFunction.apply(adapterWrapper, arguments);
-            }
+            const connection = this.transactionConnection;
+            sails.log.silly(functionName + ':: has transaction connection: ' + !!connection);
+            
             const args = [];
             for (let i = 0; i < arguments.length; i++) {
                 args.push(arguments[i]);
             }
-            const connection = TransactionConnectionPool.getConnectionById(transactionId);
-            // push the explicit connection
-            args.push(connection);
+
+            if (connection) {
+                // push the explicit connection
+                args.push(connection);
+            }
+            
             return originalFunction.apply(adapterWrapper, args);
         };
     }

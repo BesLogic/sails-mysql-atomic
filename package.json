@@ -1,6 +1,6 @@
 {
   "name": "sails-mysql-atomic",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
@@ -42,7 +42,6 @@
     "lodash": "~4.17.2",
     "sails": "~0.12.11",
     "sails-mysql": "~0.11.5",
-    "uuid": "~3.0.1",
     "winston": "~2.3.0"
   },
   "engines": {

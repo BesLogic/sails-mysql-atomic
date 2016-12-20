@@ -53,6 +53,6 @@
     "SqlTransactionFactory": true,
     "SqlTransactionHandler": true,
     "Dog": true,
-    "TransactionConnectionPool": true
+    "Bone": true
   }
 }

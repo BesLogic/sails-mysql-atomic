@@ -1,9 +1,7 @@
 const Promise = require('bluebird'),
     mysql = require('sails-mysql/node_modules/mysql'),
     _ = require('lodash'),
-    TransactionConnectionPool = require('./TransactionConnectionPool'),
-    functionsToWrap = require('./WaterlineWrappedFunctions'),
-    uuid = require('uuid');
+    functionsToWrap = require('./WaterlineWrappedFunctions');
 
 module.exports = new SqlTransactionFactory();
 
@@ -27,14 +25,6 @@ function SqlTransactionFactory() {
                     reject(err);
                     return;
                 }
-                const transactionId = uuid();
-                try {
-                    TransactionConnectionPool.registerConnection(transactionId, connection);
-                } catch (err) {
-                    sails.log.error(err);
-                    reject(err);
-                    return;
-                }
 
                 connection.beginTransaction(err => {
                     if (err) {
@@ -42,7 +32,7 @@ function SqlTransactionFactory() {
                         return;
                     }
 
-                    resolve(new SqlTransaction(transactionId, connection));
+                    resolve(new SqlTransaction(connection));
                 });
             });
         });
@@ -56,14 +46,13 @@ function SqlTransactionFactory() {
  * @type {SqlTransaction}
  * @param {MySqlConnection} connection the mysql connection
  */
-function SqlTransaction(transactionId, connection) {
+function SqlTransaction(connection) {
 
     let committed = false;
     let rolledBack = false;
     let resolveAfterTransactionPromise;
     let rejectAfterTransactionPromise;
 
-    this.id = id;
     this.forModel = forModel;
     this.commit = commit;
     this.rollback = rollback;
@@ -73,13 +62,6 @@ function SqlTransaction(transactionId, connection) {
         rejectAfterTransactionPromise = reject;
     });
 
-
-    /**
-     * @returns {string} the transaction id
-     */
-    function id() {
-        return transactionId;
-    }
     /**
      * Attatch the query to the transaction before
      * starting a query
@@ -89,13 +71,12 @@ function SqlTransaction(transactionId, connection) {
      */
     function forModel(sailsModel) {
         const modelClone = _.cloneDeep(sailsModel);
-        modelClone.mySqlTransactionId = id();
         _.each(functionsToWrap, functionName => {
             const originalFunction = modelClone[functionName];
             modelClone[functionName] = function () {
 
                 const deferred = originalFunction.apply(modelClone, arguments);
-                deferred.toPromiseWithTransactionId(functionName, id());
+                deferred.toPromiseWithConnection(functionName, connection);
                 return deferred;
             };
         });
@@ -118,7 +99,6 @@ function SqlTransaction(transactionId, connection) {
         committed = true;
         connection.commit((err) => {
             connection.release(() => {
-                TransactionConnectionPool.unregisterConnection(id());
                 if (err) {
                     sails.log.error(err);
 
@@ -162,7 +142,6 @@ function SqlTransaction(transactionId, connection) {
         connection.rollback((err) => {
             // after rollback, release the connection right away
             connection.release(() => {
-                TransactionConnectionPool.unregisterConnection(id());
                 if (err) {
                     rolledBack = true;
                     rejectAfterTransactionPromise(err);
