@@ -23,27 +23,32 @@ _.extend(Collection.prototype, {
 });
 
 // Deferred extensions
-Deferred.prototype.toPromiseWithConnection = function (functionName, connection, sqlTransaction) {
-    if (!this._deferred) {
-        // here we are starting by cloning the context so we can overwrite safely
-        // our query methods to allow injecting the current transaction id in the adapter
-        // so we can lookup the right connection to be able to rollback without
-        // modifying the actual waterline collections. This will only work with the Promise syntax.
-        // Promises are awesome :D
-        
-        // cache of { identity:clone } to avoid cloning twice a context
-        const contextCloneCache = {};
-        this._context = cloneContext(true, this._context, connection, sqlTransaction, contextCloneCache);
+Deferred.prototype.overwriteExec = function (functionName, connection, sqlTransaction) {
+    if (!this.isExecOverwritten) {
+        this.isExecOverwritten = true;
+        const originalExec = this.exec;
+        this.exec = function () {
+            // here we are starting by cloning the context so we can overwrite safely
+            // our query methods to allow injecting the current transaction id in the adapter
+            // so we can lookup the right connection to be able to rollback without
+            // modifying the actual waterline collections. This will only work with the Promise syntax.
+            // Promises are awesome :D
 
-        this._method = dql[functionName] || basicFinders[functionName] || aggregates[functionName] || composites[functionName];
-        this._deferred = Promise.promisify(this.exec).bind(this)();
+            // cache of { identity:clone } to avoid cloning twice a context
+            const contextCloneCache = {};
+            this._context = cloneContext(true, this._context, connection, sqlTransaction, contextCloneCache);
+
+            this._method = dql[functionName] || basicFinders[functionName] || aggregates[functionName] || composites[functionName];
+            
+            return originalExec.apply(this, arguments);
+        };
     }
-    return this._deferred;
+    return this;
 };
 
 function cloneContext(isRoot, context, connection, sqlTransaction, contextCloneCache) {
     const cachedClone = contextCloneCache[context.identity];
-    if(cachedClone){
+    if (cachedClone) {
         return cachedClone;
     }
     if (context.isClone) {

@@ -102,6 +102,37 @@ function beforeDestroy(criteria, cb) {
 }
 ```
 
+The hook also supports mixing the query methods together using the transaction object:
+
+- `.limit()`
+- `.populate()`
+- `.sort()`
+- `.skip()`
+- `.where()`
+
+```
+SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy', bones: [{size:'small'}, {size:'large'}] },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => transaction.forModel(Dog)
+                        .find({})
+                        .populate('bones')
+                        .sort('name ASC')
+                        .where({name:'skippy'}))
+                    .then(results => {
+                        results.length.should.be.equal(1);
+                        results[0].name.should.be.equal('skippy');
+                        results[0].bones.length.should.be.equal(2);
+                    })
+                    .then(() => done())
+                    .catch(done);
+            });
+```
+
 # Example (taken from my tests):
 ```
  //note here we are not wraping the function with 
@@ -168,7 +199,8 @@ SqlHelper.beginTransaction(...);
 
 # Limitations
 
-This hook only works and tested with the promise syntax.
+This hook works and is tested tested with the promise and exec syntax, but prmomises are what this hook was ment to be used with.
+
 
 Those methods are supported and tested with transaction:
 ```

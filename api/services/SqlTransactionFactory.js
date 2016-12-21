@@ -77,7 +77,7 @@ function SqlTransaction(connection) {
             modelClone[functionName] = function () {
 
                 const deferred = originalFunction.apply(modelClone, arguments);
-                deferred.toPromiseWithConnection(functionName, connection, self);
+                deferred.overwriteExec(functionName, connection, self);
                 return deferred;
             };
         });
