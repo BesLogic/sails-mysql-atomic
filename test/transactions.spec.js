@@ -46,7 +46,11 @@ describe('SqlTransaction ::', () => {
 
     describe('beginTransaction ::', () => {
         beforeEach(done => {
-            Dog.destroy({}).then(() => done());
+            Promise.all([
+                Dog.destroy({}),
+                Bone.destroy({}),
+                Food.destroy({})
+            ]).then(() => done());
         });
 
         const Promise = require('bluebird');
@@ -385,6 +389,114 @@ describe('SqlTransaction ::', () => {
 
         });
 
+        it('should not crash when creating object with empty association defined', done => {
+
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog).create({ name: 'fido', bones: [] })
+            )
+                .then(() => done())
+                .catch(err => done('failed: ' + err));
+
+        });
+
+
+        it('should handle one-to-many associations', done => {
+
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog).create({ name: 'fido', mainBones: [{ size: 'small' }] })
+            )
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => (!bone.owner).should.be.equal(false))
+                .then(() => SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog).destroy({ name: 'fido' });
+                }
+                ))
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(0))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => {
+                    (!bone.owner).should.be.equal(true);
+                })
+                .then(() => done())
+                .catch(err => done('failed: ' + err));
+
+        });
+
+        it('should handle one-to-many associations', done => {
+
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog).create({ name: 'fido', mainBones: [{ size: 'small' }] })
+            )
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => (!bone.owner).should.be.equal(false))
+                .then(() => SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog).destroy({ name: 'fido' })
+                        .then(() => transaction.rollback());
+                }
+                ))
+                .catch(() => { })
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => {
+                    (!bone.owner).should.be.equal(false);
+                })
+                .then(() => done())
+                .catch(err => done('failed: ' + err));
+
+        });
+
+        it('should rollback multiple many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        bones: [{ size: 'small' }, { size: 'big' }],
+                        favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                    })
+                    .then(() => transaction.rollback())                    
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done)
+            );
+        });
+
+        it('should commit multiple many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        bones: [{ size: 'small' }, { size: 'big' }],
+                        favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                    })
+                    .then(() => transaction.commit())                    
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => done())
+                    .catch(done)
+            );
+        });
 
     });
 

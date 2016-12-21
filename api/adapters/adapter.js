@@ -9,14 +9,21 @@ const mysqlAdapter = require('sails-mysql/lib/adapter.js'),
     defaultMethods = require('waterline/lib/waterline/model/lib/defaultMethods'),
     basicFinders = require('waterline/lib/waterline/query/finders/basic'),
     aggregates = require('waterline/lib/waterline/query/aggregate'),
-    composites = require('waterline/lib/waterline/query/composite')
+    composites = require('waterline/lib/waterline/query/composite'),
+    Collection = require('waterline').Collection;
 
 _.extend(adapterWrapper, {
     identity: 'sails-mysql-atomic'
 });
 
+// Extend waterline Collection prototype
+_.extend(Collection.prototype, {
+    // setup default return method
+    cascadeOperationForModel: function(model) {return model;}
+});
+
 // Deferred extensions
-Deferred.prototype.toPromiseWithConnection = function (functionName, connection) {
+Deferred.prototype.toPromiseWithConnection = function (functionName, connection, sqlTransaction) {
     if (!this._deferred) {
         // here we are starting by cloning the context so we can overwrite safely
         // our query methods to allow injecting the current transaction id in the adapter
@@ -32,9 +39,12 @@ Deferred.prototype.toPromiseWithConnection = function (functionName, connection)
         const context = this._context;
         context._model = function (values) {
             const newModel = new originalModel(values);
-            // overwrite the model save method to pass the current context
+            // overwrite the model save and destroy method to pass the current context
             newModel.save = function (options, cb) {
                 return new defaultMethods.save(context, this, options, cb);
+            };
+            newModel.destroy = function (cb) {
+                return new defaultMethods.destroy(context, this, cb);
             };
             return newModel;
         };
@@ -52,7 +62,11 @@ Deferred.prototype.toPromiseWithConnection = function (functionName, connection)
                 this._context[key] = definition[key];
                 // we need to overwrite it in the waterline collections as well since it is used when creating
                 // associations
-                _.each(this._context.waterline.collections, collection => collection[key] = definition[key]);
+                _.each(this._context.waterline.collections, collection => {
+                    collection[key] = definition[key];
+                    // overwrite the default cascade operation method to use this transaction
+                    collection.cascadeOperationForModel = sqlTransaction.forModel;
+                });
             });
         });
         

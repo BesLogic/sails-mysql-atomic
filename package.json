@@ -1,6 +1,6 @@
 {
   "name": "sails-mysql-atomic",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {

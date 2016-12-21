@@ -44,6 +44,64 @@ You need to provide a callback that receives a transaction object and that must 
 > This connects the opened transaction to the sails model to prepare the query for the transaction
 
 
+
+We also need to wrap our models using the method `this.cascadeOperationForModel` when accessing them in any cascade operations in case we are in a transaction to ensure using the same connection:
+
+- `beforeValidate`
+- `afterValidate`
+- `beforeCreate`
+- `afterCreate`
+
+- `beforeValidate`
+- `afterValidate`
+- `beforeUpdate`
+- `afterUpdate`
+
+- `beforeDestroy`
+- `afterDestroy`
+
+```
+// Dog.js
+module.exports = {
+
+  attributes: {
+
+    name: { type: 'string', unique: true },
+
+    bones: {
+      collection: 'bone',
+      via: 'dogs',
+      dominant: true
+    },
+
+    mainBones: {
+      collection: 'bone',
+      via: 'owner'
+    }
+
+  },
+
+  beforeDestroy: beforeDestroy
+};
+
+function beforeDestroy(criteria, cb) {
+  // we may be in a transaction, wrap all models using this method
+  // to bind the right connection if we are in a transaction
+  const forModel = this.cascadeOperationForModel;
+  forModel(Dog).find(criteria, { select: ['id'] })
+    .then(dogIds => {
+      if (dogIds.length) {
+        // if we are in a transaction, we want to be able to rollback 
+        // if something goes wrong later
+        return forModel(Bone)
+          .update({ owner: _.map(dogIds, 'id') }, { owner: null });
+      }
+    })
+    .then(() => cb())
+    .catch(cb);
+}
+```
+
 # Example (taken from my tests):
 ```
  //note here we are not wraping the function with 
