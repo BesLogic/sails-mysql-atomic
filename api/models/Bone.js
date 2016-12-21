@@ -7,6 +7,10 @@ module.exports = {
     dogs: {
         collection: 'dog',
         via:'bones'
+    },
+
+    owner: {
+      model:'dog'
     }
   }
 };

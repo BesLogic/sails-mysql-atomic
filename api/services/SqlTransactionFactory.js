@@ -47,7 +47,8 @@ function SqlTransactionFactory() {
  * @param {MySqlConnection} connection the mysql connection
  */
 function SqlTransaction(connection) {
-
+    const self = this;
+    
     let committed = false;
     let rolledBack = false;
     let resolveAfterTransactionPromise;
@@ -76,7 +77,7 @@ function SqlTransaction(connection) {
             modelClone[functionName] = function () {
 
                 const deferred = originalFunction.apply(modelClone, arguments);
-                deferred.toPromiseWithConnection(functionName, connection);
+                deferred.overwriteExec(functionName, connection, self);
                 return deferred;
             };
         });

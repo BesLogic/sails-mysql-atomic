@@ -53,6 +53,7 @@
     "SqlTransactionFactory": true,
     "SqlTransactionHandler": true,
     "Dog": true,
-    "Bone": true
+    "Bone": true,
+    "Food": true
   }
 }

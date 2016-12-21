@@ -46,7 +46,11 @@ describe('SqlTransaction ::', () => {
 
     describe('beginTransaction ::', () => {
         beforeEach(done => {
-            Dog.destroy({}).then(() => done());
+            Promise.all([
+                Dog.destroy({}),
+                Bone.destroy({}),
+                Food.destroy({})
+            ]).then(() => done());
         });
 
         const Promise = require('bluebird');
@@ -385,7 +389,403 @@ describe('SqlTransaction ::', () => {
 
         });
 
+        it('should not crash when creating object with empty association defined', done => {
 
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog).create({ name: 'fido', bones: [] })
+            )
+                .then(() => done())
+                .catch(err => done('failed: ' + err));
+
+        });
+
+
+        it('should handle one-to-many associations', done => {
+
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog).create({ name: 'fido', mainBones: [{ size: 'small' }] })
+            )
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => (!bone.owner).should.be.equal(false))
+                .then(() => SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog).destroy({ name: 'fido' });
+                }
+                ))
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(0))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => {
+                    (!bone.owner).should.be.equal(true);
+                })
+                .then(() => done())
+                .catch(err => done('failed: ' + err));
+
+        });
+
+        it('should handle one-to-many associations', done => {
+
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog).create({ name: 'fido', mainBones: [{ size: 'small' }] })
+            )
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => (!bone.owner).should.be.equal(false))
+                .then(() => SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog).destroy({ name: 'fido' })
+                        .then(() => transaction.rollback());
+                }
+                ))
+                .catch(() => { })
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => Bone.findOne({ size: 'small' }))
+                .then(bone => {
+                    (!bone.owner).should.be.equal(false);
+                })
+                .then(() => done())
+                .catch(err => done('failed: ' + err));
+
+        });
+
+        it('should rollback multiple many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        bones: [{ size: 'small' }, { size: 'big' }],
+                        favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                    })
+                    .then(() => transaction.rollback())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done)
+            );
+        });
+
+        it('should commit different many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        bones: [{ size: 'small' }, { size: 'big' }],
+                        favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                    })
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => done())
+                    .catch(done)
+            );
+        });
+
+        it('should commit multiple many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog)
+                    .create([
+                        {
+                            name: 'fido',
+                            bones: [{ size: 'small' }, { size: 'big' }],
+                            favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                        },
+                        {
+                            name: 'skippy',
+                            bones: [{ size: 'small' }, { size: 'big' }],
+                            favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                        }
+                    ])
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(4))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(4))
+                    .then(() => done())
+                    .catch(done)
+            );
+        });
+
+        it('should commit nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{ name: 'bone', dogs: [] }]
+                    })
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => done())
+                    .catch(done);
+            }
+            );
+        });
+
+        it('should rollback nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{ name: 'bone', dogs: [] }]
+                    })
+                    .then(() => transaction.rollback())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done);
+            }
+            );
+        });
+
+        it('should commit deeply nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{
+                            name: 'bone',
+                            dogs: [
+                                { name: 'skippy', bones: [{ size: 'small' }, { size: 'large' }], favoriteFoodTypes: [{ name: 'poutine', dogs: [{ name: 'peanut' }] }] }]
+                        }
+                        ]
+                    })
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(3))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => done())
+                    .catch(done);
+            }
+            );
+        });
+
+        it('should rollback deeply nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{
+                            name: 'bone',
+                            dogs: [
+                                {
+                                    name: 'skippy', bones: [{ size: 'small' }, { size: 'large' }],
+                                    favoriteFoodTypes: [{ name: 'poutine', dogs: [{ name: 'peanut' }] }]
+                                }
+                            ]
+                        }]
+                    })
+                    .then(() => transaction.rollback())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
+        it('should support skip in transaction', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy' },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => transaction.forModel(Dog)
+                        .find({})
+                        .skip(1))
+                    .then(results => results.length.should.be.equal(2))
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
+        it('should support limit in transaction', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy' },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => transaction.forModel(Dog)
+                        .find({})
+                        .limit(1))
+                    .then(results => results.length.should.be.equal(1))
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
+        it('should support sort in transaction', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy' },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => transaction.forModel(Dog)
+                        .find({})
+                        .sort('name ASC')
+                        .limit(1))
+                    .then(results => {
+                        results.length.should.be.equal(1);
+                        results[0].name.should.be.equal('fido');
+                    })
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
+        it('should support where in transaction', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy' },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => transaction.forModel(Dog)
+                        .find({})
+                        .sort('name ASC')
+                        .where({name:'peanut'}))
+                    .then(results => {
+                        results.length.should.be.equal(1);
+                        results[0].name.should.be.equal('peanut');
+                    })
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
+        it('should support populate in transaction', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create([
+                        { name: 'fido' },
+                        { name: 'skippy', bones: [{size:'small'}, {size:'large'}] },
+                        { name: 'peanut' }
+                    ])
+                    .then(() => transaction.forModel(Dog)
+                        .find({})
+                        .populate('bones')
+                        .sort('name ASC')
+                        .where({name:'skippy'}))
+                    .then(results => {
+                        results.length.should.be.equal(1);
+                        results[0].name.should.be.equal('skippy');
+                        results[0].bones.length.should.be.equal(2);
+                    })
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
+
+        describe('with exec syntax ::', () => {
+            it('should rollback create', done => {
+                SqlHelper.beginTransaction(transaction =>
+                    new Promise(resolve => {
+                        transaction.forModel(Dog)
+                            .create({ name: 'fido', bones: [{ size: 'small' }] })
+                            .exec((err) => {
+                                if (err) { done(err); }
+
+                                Promise.all([
+                                    transaction.forModel(Dog).count({}),
+                                    transaction.forModel(Bone).count({})
+                                ])
+                                    .spread((dogCount, boneCount) => {
+                                        dogCount.should.be.equal(1);
+                                        boneCount.should.be.equal(1);
+                                        return transaction.rollback()
+                                            .then(() => {
+                                                return Promise.all([
+                                                    Dog.count({}),
+                                                    Bone.count({})
+                                                ])
+                                                    .spread((dogCount, boneCount) => {
+                                                        dogCount.should.be.equal(0);
+                                                        boneCount.should.be.equal(0);
+                                                        resolve();
+                                                        done();
+                                                    });
+                                            });
+                                    })
+                                    .catch(done);
+                            });
+                    }));
+            });
+
+            it('should commit create', done => {
+                SqlHelper.beginTransaction(transaction =>
+                    new Promise(resolve => {
+                        transaction.forModel(Dog)
+                            .create({ name: 'fido', bones: [{ size: 'small' }] })
+                            .exec((err) => {
+                                if (err) { done(err); }
+
+                                Promise.all([
+                                    transaction.forModel(Dog).count({}),
+                                    transaction.forModel(Bone).count({})
+                                ])
+                                    .spread((dogCount, boneCount) => {
+                                        dogCount.should.be.equal(1);
+                                        boneCount.should.be.equal(1);
+                                        return transaction.commit()
+                                            .then(() => {
+                                                return Promise.all([
+                                                    Dog.count({}),
+                                                    Bone.count({})
+                                                ])
+                                                    .spread((dogCount, boneCount) => {
+                                                        dogCount.should.be.equal(1);
+                                                        boneCount.should.be.equal(1);
+                                                        resolve();
+                                                        done();
+                                                    });
+                                            });
+                                    })
+                                    .catch(done);
+                            });
+                    }));
+            });
+        });
     });
 
 });
