@@ -466,7 +466,7 @@ describe('SqlTransaction ::', () => {
                         bones: [{ size: 'small' }, { size: 'big' }],
                         favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
                     })
-                    .then(() => transaction.rollback())                    
+                    .then(() => transaction.rollback())
                     .then(() => Dog.count({}))
                     .then(count => count.should.be.equal(0))
                     .then(() => Bone.count({}))
@@ -478,7 +478,7 @@ describe('SqlTransaction ::', () => {
             );
         });
 
-        it('should commit multiple many-to-many association creation', done => {
+        it('should commit different many-to-many association creation', done => {
             SqlHelper.beginTransaction(transaction =>
                 transaction.forModel(Dog)
                     .create({
@@ -486,7 +486,7 @@ describe('SqlTransaction ::', () => {
                         bones: [{ size: 'small' }, { size: 'big' }],
                         favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
                     })
-                    .then(() => transaction.commit())                    
+                    .then(() => transaction.commit())
                     .then(() => Dog.count({}))
                     .then(count => count.should.be.equal(1))
                     .then(() => Bone.count({}))
@@ -495,6 +495,121 @@ describe('SqlTransaction ::', () => {
                     .then(count => count.should.be.equal(2))
                     .then(() => done())
                     .catch(done)
+            );
+        });
+
+        it('should commit multiple many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction =>
+                transaction.forModel(Dog)
+                    .create([
+                        {
+                            name: 'fido',
+                            bones: [{ size: 'small' }, { size: 'big' }],
+                            favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                        },
+                        {
+                            name: 'skippy',
+                            bones: [{ size: 'small' }, { size: 'big' }],
+                            favoriteFoodTypes: [{ name: 'bone' }, { name: 'poutine' }]
+                        }
+                    ])
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(4))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(4))
+                    .then(() => done())
+                    .catch(done)
+            );
+        });
+
+        it('should commit nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{ name: 'bone', dogs: [] }]
+                    })
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => done())
+                    .catch(done);
+            }
+            );
+        });
+
+        it('should rollback nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{ name: 'bone', dogs: [] }]
+                    })
+                    .then(() => transaction.rollback())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done);
+            }
+            );
+        });
+
+        it('should commit deeply nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{ 
+                            name: 'bone', 
+                            dogs: [
+                                { name: 'skippy', bones: [{ size: 'small' }, { size: 'large' }], favoriteFoodTypes: [{name:'poutine', dogs:[{name:'peanut'}]}] }] }
+                            ]
+                    })
+                    .then(() => transaction.commit())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(3))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(2))
+                    .then(() => done())
+                    .catch(done);
+            }
+            );
+        });
+
+        it('should rollback deeply nested many-to-many association creation', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({
+                        name: 'fido',
+                        favoriteFoodTypes: [{ 
+                            name: 'bone', 
+                            dogs: [
+                                { name: 'skippy', bones: [{ size: 'small' }, { size: 'large' }], favoriteFoodTypes: [{name:'poutine', dogs:[{name:'peanut'}]}] }] }
+                            ]
+                    })
+                    .then(() => transaction.rollback())
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Bone.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => Food.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done);
+            }
             );
         });
 
