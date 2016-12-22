@@ -683,7 +683,7 @@ describe('SqlTransaction ::', () => {
                     .then(() => transaction.forModel(Dog)
                         .find({})
                         .sort('name ASC')
-                        .where({name:'peanut'}))
+                        .where({ name: 'peanut' }))
                     .then(results => {
                         results.length.should.be.equal(1);
                         results[0].name.should.be.equal('peanut');
@@ -698,14 +698,14 @@ describe('SqlTransaction ::', () => {
                 return transaction.forModel(Dog)
                     .create([
                         { name: 'fido' },
-                        { name: 'skippy', bones: [{size:'small'}, {size:'large'}] },
+                        { name: 'skippy', bones: [{ size: 'small' }, { size: 'large' }] },
                         { name: 'peanut' }
                     ])
                     .then(() => transaction.forModel(Dog)
                         .find({})
                         .populate('bones')
                         .sort('name ASC')
-                        .where({name:'skippy'}))
+                        .where({ name: 'skippy' }))
                     .then(results => {
                         results.length.should.be.equal(1);
                         results[0].name.should.be.equal('skippy');
@@ -715,6 +715,74 @@ describe('SqlTransaction ::', () => {
                     .catch(done);
             });
         });
+
+        
+            it('should commit model.save()', done => {
+                SqlHelper.beginTransaction(transaction => {
+                transaction.after.then(() => {
+                    Dog.find({})
+                        .then(results => {
+                            results.length.should.be.equal(1);
+                            results[0].name.should.be.equal('fido2');
+                            done();
+                        });
+                });
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido' })
+                    .then(dog => {
+                        dog.name = 'fido2';
+                        return dog.save();
+                    });
+                });
+            });
+
+            it('should rollback model.save()', done => {
+                SqlHelper.beginTransaction(transaction => {
+                transaction.after.catch(() => {
+                    Dog.find({})
+                        .then(results => {
+                            results.length.should.be.equal(0);
+                            done();
+                        });
+                });
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido' })
+                    .then(dog => {
+                        dog.name = 'fido2';
+                        return dog.save()
+                                .then(() => transaction.rollback());
+                    });
+                });
+            });
+
+            it('should commit model.destroy()', done => {
+                SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog)
+                        .create({ name: 'fido' });
+                    })
+                    .then(() => SqlHelper.beginTransaction(transaction => 
+                        transaction.forModel(Dog).findOne({name:'fido'})
+                        .then(dog => dog.destroy())))
+                    .then(() => Dog.count({}))
+                    .then(count => count.should.be.equal(0))
+                    .then(() => done())
+                    .catch(done);
+            });
+
+            it('should rollback model.destroy()', done => {
+                SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog)
+                        .create({ name: 'fido' });
+                    })
+                    .then(() => SqlHelper.beginTransaction(transaction => 
+                        transaction.forModel(Dog).findOne({name:'fido'})
+                        .then(dog => dog.destroy())
+                        .then(() => transaction.rollback())))
+                    .catch(() => Dog.count({}))
+                    .then(count => count.should.be.equal(1))
+                    .then(() => done())
+                    .catch(done);
+            });
 
 
         describe('with exec syntax ::', () => {
@@ -786,6 +854,33 @@ describe('SqlTransaction ::', () => {
                     }));
             });
         });
+
+        describe('with cascade interceptors ::', () => {
+            it('should pass the connection to beforeValidate, beforeCreate and afterCreate', done => {
+                SqlHelper.beginTransaction(transaction => 
+                    transaction.forModel(Cascade)
+                    .create({name:'test'}))
+                    .then(() => done())
+                    .catch(done);
+            });
+            it('should pass the connection to beforeValidate, beforeUpdate and afterUpdate', done => {
+                SqlHelper.beginTransaction(transaction => 
+                    transaction.forModel(Cascade)
+                    .create({name:'test'})
+                    .then(() => transaction.forModel(Cascade).update({name:'test'}, {name:'test2'})))
+                    .then(() => done())
+                    .catch(done);
+            });
+            it('should pass the connection to beforeValidate, beforeDestroy and afterDestroy', done => {
+                SqlHelper.beginTransaction(transaction => 
+                    transaction.forModel(Cascade)
+                    .create({name:'test'})
+                    .then(() => transaction.forModel(Cascade).destroy({name:'test'})))
+                    .then(() => done())
+                    .catch(done);
+            });
+        });
+
     });
 
 });

@@ -54,6 +54,7 @@
     "SqlTransactionHandler": true,
     "Dog": true,
     "Bone": true,
+    "Cascade": true,
     "Food": true
   }
 }

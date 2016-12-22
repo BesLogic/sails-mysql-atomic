@@ -10,6 +10,7 @@ const mysqlAdapter = require('sails-mysql/lib/adapter.js'),
     basicFinders = require('waterline/lib/waterline/query/finders/basic'),
     aggregates = require('waterline/lib/waterline/query/aggregate'),
     composites = require('waterline/lib/waterline/query/composite'),
+    validate = require('waterline/lib/waterline/query/validate'),
     Collection = require('waterline').Collection;
 
 _.extend(adapterWrapper, {
@@ -51,9 +52,6 @@ function cloneContext(isRoot, context, connection, sqlTransaction, contextCloneC
     if (cachedClone) {
         return cachedClone;
     }
-    if (context.isClone) {
-        return context;
-    }
     // we only need to deep clone the root level, after that we already 
     // have a copy of the context, we just need to set it up
     const contextClone = isRoot ? _.cloneDeep(context) : context;
@@ -72,7 +70,8 @@ function cloneContext(isRoot, context, connection, sqlTransaction, contextCloneC
         dql,
         basicFinders,
         aggregates,
-        composites
+        composites,
+        validate
     ];
 
     _.each(methodDefinitions, definition => {

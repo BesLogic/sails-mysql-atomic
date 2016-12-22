@@ -48,12 +48,10 @@ You need to provide a callback that receives a transaction object and that must 
 We also need to wrap our models using the method `this.cascadeOperationForModel` when accessing them in any cascade operations in case we are in a transaction to ensure using the same connection:
 
 - `beforeValidate`
-- `afterValidate`
+
 - `beforeCreate`
 - `afterCreate`
 
-- `beforeValidate`
-- `afterValidate`
 - `beforeUpdate`
 - `afterUpdate`
 
