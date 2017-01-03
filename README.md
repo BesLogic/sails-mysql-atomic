@@ -38,7 +38,7 @@ You need to provide a callback that receives a transaction object and that must 
 > Rollbacks the transaction manually and return the promise that gets resolved if the rollback is successful, otherwise the promise is rejected.
 
 `.after -> Promise`
-> A global promise of the transaction. If the transaction is committed, this promise will be resolved. If it has been rollbacked, this promise is rejected.
+> A global promise of the transaction. If the transaction is committed, this promise will be resolved with the data passed in the `transaction.commit(...)` or returned in the transaction promise chain. If it has been rollbacked, this promise is rejected.
 
 `.forModel(SailsModel) -> SailsModel`
 > This connects the opened transaction to the sails model to prepare the query for the transaction
@@ -148,7 +148,7 @@ SqlHelper.beginTransaction(transaction => {
 // handling transaction result:
 
 SqlHelper.beginTransaction(transaction => {
-        transaction.after.then(() => {
+        transaction.after.then(dataPassedOnCommit => {
             // handle transaction success after commit
         })
         .catch(() => {
@@ -164,7 +164,7 @@ SqlHelper.beginTransaction(transaction => {
 
             // This is how we handle stuff manually:
             // manual commit
-            .then(() => transaction.commit()
+            .then(() => transaction.commit(/*{some:'data'}*/)
                         .then(/*[optional] commit success*/)
                         .catch(/*[optional] commit failed*/));
             // manual rollback
@@ -173,7 +173,7 @@ SqlHelper.beginTransaction(transaction => {
                         .catch(/*[optional] rollback failed*/));
     })
     // this promise is the same as the one passed via transaction.after
-    .then(() => {
+    .then(dataPassedOnCommit => {
         // handle transaction success after commit
     })
     .catch(() => {

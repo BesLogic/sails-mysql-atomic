@@ -38,12 +38,12 @@ function SqlHelper() {
                     return Promise.reject(error);
                 }
 
-                promiseChain.then(() => {
+                promiseChain.then(data => {
                     // if unhandled at this point, chec if we need
                     // to commit or rollback. If it fails on commit
                     // it will rollback automatically
                     if (!sqlTransaction.isHandled()) {
-                        sqlTransaction.commit();
+                        sqlTransaction.commit(data);
                     }
                 },
                 (err) => {

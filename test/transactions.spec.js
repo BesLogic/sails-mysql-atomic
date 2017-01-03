@@ -716,9 +716,9 @@ describe('SqlTransaction ::', () => {
             });
         });
 
-        
-            it('should commit model.save()', done => {
-                SqlHelper.beginTransaction(transaction => {
+
+        it('should commit model.save()', done => {
+            SqlHelper.beginTransaction(transaction => {
                 transaction.after.then(() => {
                     Dog.find({})
                         .then(results => {
@@ -733,11 +733,11 @@ describe('SqlTransaction ::', () => {
                         dog.name = 'fido2';
                         return dog.save();
                     });
-                });
             });
+        });
 
-            it('should rollback model.save()', done => {
-                SqlHelper.beginTransaction(transaction => {
+        it('should rollback model.save()', done => {
+            SqlHelper.beginTransaction(transaction => {
                 transaction.after.catch(() => {
                     Dog.find({})
                         .then(results => {
@@ -750,39 +750,52 @@ describe('SqlTransaction ::', () => {
                     .then(dog => {
                         dog.name = 'fido2';
                         return dog.save()
-                                .then(() => transaction.rollback());
+                            .then(() => transaction.rollback());
                     });
-                });
             });
+        });
 
-            it('should commit model.destroy()', done => {
-                SqlHelper.beginTransaction(transaction => {
-                    return transaction.forModel(Dog)
-                        .create({ name: 'fido' });
-                    })
-                    .then(() => SqlHelper.beginTransaction(transaction => 
-                        transaction.forModel(Dog).findOne({name:'fido'})
+        it('should commit model.destroy()', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido' });
+            })
+                .then(() => SqlHelper.beginTransaction(transaction =>
+                    transaction.forModel(Dog).findOne({ name: 'fido' })
                         .then(dog => dog.destroy())))
-                    .then(() => Dog.count({}))
-                    .then(count => count.should.be.equal(0))
-                    .then(() => done())
-                    .catch(done);
-            });
+                .then(() => Dog.count({}))
+                .then(count => count.should.be.equal(0))
+                .then(() => done())
+                .catch(done);
+        });
 
-            it('should rollback model.destroy()', done => {
-                SqlHelper.beginTransaction(transaction => {
-                    return transaction.forModel(Dog)
-                        .create({ name: 'fido' });
-                    })
-                    .then(() => SqlHelper.beginTransaction(transaction => 
-                        transaction.forModel(Dog).findOne({name:'fido'})
+        it('should rollback model.destroy()', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido' });
+            })
+                .then(() => SqlHelper.beginTransaction(transaction =>
+                    transaction.forModel(Dog).findOne({ name: 'fido' })
                         .then(dog => dog.destroy())
                         .then(() => transaction.rollback())))
-                    .catch(() => Dog.count({}))
-                    .then(count => count.should.be.equal(1))
-                    .then(() => done())
-                    .catch(done);
-            });
+                .catch(() => Dog.count({}))
+                .then(count => count.should.be.equal(1))
+                .then(() => done())
+                .catch(done);
+        });
+
+        it('should resolve commit promise with the data returned in the transaction promise', done => {
+            SqlHelper.beginTransaction(transaction => {
+                return transaction.forModel(Dog)
+                    .create({ name: 'fido' });
+            })
+            .then(createdDog => {
+                (!!createdDog).should.be.true;
+                createdDog.name.should.be.equal('fido');
+                done();
+            })
+            .catch(done);
+        });
 
 
         describe('with exec syntax ::', () => {
@@ -857,25 +870,25 @@ describe('SqlTransaction ::', () => {
 
         describe('with cascade interceptors ::', () => {
             it('should pass the connection to beforeValidate, beforeCreate and afterCreate', done => {
-                SqlHelper.beginTransaction(transaction => 
+                SqlHelper.beginTransaction(transaction =>
                     transaction.forModel(Cascade)
-                    .create({name:'test'}))
+                        .create({ name: 'test' }))
                     .then(() => done())
                     .catch(done);
             });
             it('should pass the connection to beforeValidate, beforeUpdate and afterUpdate', done => {
-                SqlHelper.beginTransaction(transaction => 
+                SqlHelper.beginTransaction(transaction =>
                     transaction.forModel(Cascade)
-                    .create({name:'test'})
-                    .then(() => transaction.forModel(Cascade).update({name:'test'}, {name:'test2'})))
+                        .create({ name: 'test' })
+                        .then(() => transaction.forModel(Cascade).update({ name: 'test' }, { name: 'test2' })))
                     .then(() => done())
                     .catch(done);
             });
             it('should pass the connection to beforeValidate, beforeDestroy and afterDestroy', done => {
-                SqlHelper.beginTransaction(transaction => 
+                SqlHelper.beginTransaction(transaction =>
                     transaction.forModel(Cascade)
-                    .create({name:'test'})
-                    .then(() => transaction.forModel(Cascade).destroy({name:'test'})))
+                        .create({ name: 'test' })
+                        .then(() => transaction.forModel(Cascade).destroy({ name: 'test' })))
                     .then(() => done())
                     .catch(done);
             });

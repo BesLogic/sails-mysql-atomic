@@ -87,8 +87,11 @@ function SqlTransaction(connection) {
 
     /**
      * Commit the transaction
+     * 
+     * @param {any} data the data to pass when resolving the after promise
+     * @returns
      */
-    function commit() {
+    function commit(data) {
         if (isHandled()) {
             if (committed) {
                 return Promise.reject('This transaction has already been committed');
@@ -112,7 +115,7 @@ function SqlTransaction(connection) {
                 }
 
 
-                resolveAfterTransactionPromise();
+                resolveAfterTransactionPromise(data);
                 sails.log.debug('COMMIT!');
             });
 
