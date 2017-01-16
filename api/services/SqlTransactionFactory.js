@@ -110,13 +110,13 @@ function SqlTransaction(connection) {
                     committed = false;
                     rejectAfterTransactionPromise(err);
 
-                    sails.log.debug('ROLLEDBACK!');
+                    sails.log.silly('ROLLEDBACK!');
                     return;
                 }
 
 
                 resolveAfterTransactionPromise(data);
-                sails.log.debug('COMMIT!');
+                sails.log.silly('COMMIT!');
             });
 
         });
@@ -152,14 +152,14 @@ function SqlTransaction(connection) {
                     rejectRollback(err);
 
                     sails.log.error(err);
-                    sails.log.debug('ROLLBACK ERROR!');
+                    sails.log.silly('ROLLBACK ERROR!');
                     return;
                 }
 
                 rejectAfterTransactionPromise(error);
                 resolveRollback();
 
-                sails.log.debug('ROLLBACK!');
+                sails.log.silly('ROLLBACK!');
             });
 
         });
