@@ -30,7 +30,7 @@
   "license": "ISC",
   "devDependencies": {
     "chai": "~3.5.0",
-    "eslint": "~3.13.1",
+    "eslint": "~3.14.1",
     "istanbul": "~0.4.5",
     "mocha": "~3.2.0",
     "newman": "~3.4.2",
