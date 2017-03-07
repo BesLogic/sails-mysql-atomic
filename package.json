@@ -33,7 +33,7 @@
     "eslint": "~3.15.0",
     "istanbul": "~0.4.5",
     "mocha": "~3.2.0",
-    "newman": "~3.4.2",
+    "newman": "~3.5.0",
     "should": "~11.2.0",
     "sinon": "~1.17.6",
     "coveralls": "~2.11.15"
