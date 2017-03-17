@@ -35,7 +35,7 @@
     "mocha": "~3.2.0",
     "newman": "~3.5.0",
     "should": "~11.2.0",
-    "sinon": "~1.17.6",
+    "sinon": "~2.0.0-pre.6",
     "coveralls": "~2.11.15"
   },
   "dependencies": {
