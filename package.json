@@ -29,8 +29,8 @@
   "author": "Samuel Poirier",
   "license": "ISC",
   "devDependencies": {
+    "eslint": "~4.1.0",
     "chai": "~4.0.1",
-    "eslint": "~3.18.0",
     "istanbul": "~0.4.5",
     "mocha": "~3.4.0",
     "newman": "~3.6.0",
