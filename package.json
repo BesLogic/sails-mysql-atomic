@@ -36,7 +36,7 @@
     "newman": "~3.6.0",
     "should": "~11.2.0",
     "sinon": "~2.3.0",
-    "coveralls": "~2.13.0"
+    "coveralls": "~3.0.0"
   },
   "dependencies": {
     "lodash": "~4.17.2",
