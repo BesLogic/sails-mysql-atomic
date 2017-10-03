@@ -33,7 +33,7 @@
     "chai": "~4.0.1",
     "istanbul": "~0.4.5",
     "mocha": "~3.4.0",
-    "newman": "~3.6.0",
+    "newman": "~3.8.3",
     "should": "~11.2.0",
     "sinon": "~2.3.0",
     "coveralls": "~2.13.0"
