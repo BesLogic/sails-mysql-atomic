@@ -29,13 +29,13 @@
   "author": "Samuel Poirier",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "~4.1.0",
-    "chai": "~4.0.1",
+    "eslint": "~4.2.0",
+    "chai": "~4.1.0",
     "istanbul": "~0.4.5",
     "mocha": "~3.5.0",
-    "newman": "~3.6.0",
+    "newman": "~3.7.3",
     "should": "~11.2.0",
-    "sinon": "~2.3.0",
+    "sinon": "~2.4.0",
     "coveralls": "~2.13.0"
   },
   "dependencies": {
