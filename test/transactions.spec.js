@@ -894,6 +894,33 @@ describe('SqlTransaction ::', () => {
             });
         });
 
+        describe('with transaction timeout ::', () => {
+            it('should not throw when committing in an async timeout', done => {
+               
+                SqlHelper.beginTransaction(transaction => {
+                    return transaction.forModel(Dog).update({id: 1}, {name:'fido'}).then((dat) => {
+                        return new Promise((resolve, reject) => {
+                            setTimeout(() => {
+                                transaction.commit('resolved data').then((rb) => {
+                                    resolve();
+                                }).catch((err5) => {
+                                    console.log("err5", err5)
+                                })
+                    
+                            }, 150);
+                        })
+                        
+                
+                    }).catch((err4) => {
+                        console.log("err4", err4)
+                    })
+                })
+                .then((data) => {
+                    done();
+                })
+                .catch(done);
+            })
+        })
     });
 
 });
