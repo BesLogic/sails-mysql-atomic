@@ -1,6 +1,6 @@
 {
   "name": "sails-mysql-atomic",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Helper service to facilitate the usage of mysql transactions",
   "main": "index.js",
   "sails": {
@@ -29,20 +29,20 @@
   "author": "Samuel Poirier",
   "license": "ISC",
   "devDependencies": {
-    "chai": "~3.5.0",
-    "eslint": "~3.12.0",
+    "eslint": "~4.2.0",
+    "chai": "~4.1.0",
     "istanbul": "~0.4.5",
-    "mocha": "~3.2.0",
-    "newman": "~2.1.2",
-    "should": "~11.1.2",
-    "sinon": "~1.17.6",
-    "coveralls": "~2.11.15"
+    "mocha": "~3.5.0",
+    "newman": "~3.7.3",
+    "should": "~12.0.0",
+    "sinon": "~2.4.0",
+    "coveralls": "~3.0.0"
   },
   "dependencies": {
     "lodash": "~4.17.2",
-    "sails": "~0.12.11",
+    "sails": "~0.12.13",
     "sails-mysql": "~0.11.5",
-    "winston": "~2.3.0"
+    "winston": "~2.4.0"
   },
   "engines": {
     "node": ">=6.9.2"
